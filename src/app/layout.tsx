@@ -7,6 +7,8 @@ import { cn } from '~/lib/utils'
 import { Footer } from '~/components/layout/footer'
 import { Navbar } from '~/components/layout/navbar'
 import { ThemeProvider } from '~/components/theme-provider'
+import { OpenpanelProvider } from '@openpanel/nextjs'
+import { env } from '~/env'
 
 const fontSans = FontSans({
 	subsets: ['latin'],
@@ -30,6 +32,13 @@ export default function RootLayout({
 					'min-h-screen bg-background font-sans antialiased',
 					fontSans.variable,
 				)}>
+				<OpenpanelProvider
+					url="https://api.openpanel.dev"
+					clientId={env.OPENPANEL_CLIENT_ID}
+					trackScreenViews={true}
+					trackAttributes={true}
+					trackOutgoingLinks={true}
+				/>
 				<TRPCReactProvider>
 					<ThemeProvider
 						attribute="class"
