@@ -3,6 +3,7 @@ lockfileVersion: 5.4
 specifiers:
   '@auth/prisma-adapter': ^1.4.0
   '@hookform/resolvers': ^3.3.4
+  '@openpanel/nextjs': 0.0.8-beta
   '@prisma/client': ^5.10.2
   '@radix-ui/react-avatar': ^1.0.4
   '@radix-ui/react-dropdown-menu': ^2.0.6
@@ -46,6 +47,7 @@ specifiers:
 dependencies:
   '@auth/prisma-adapter': 1.6.0_@prisma+client@5.12.1
   '@hookform/resolvers': 3.3.4_react-hook-form@7.51.2
+  '@openpanel/nextjs': 0.0.8-beta_h6dj7hpgrjuca5cqek3dk6bqim
   '@prisma/client': 5.12.1_prisma@5.12.1
   '@radix-ui/react-avatar': 1.0.4_cc55nvzwlsvwrl3jhzkkbmzrbi
   '@radix-ui/react-dropdown-menu': 2.0.6_cc55nvzwlsvwrl3jhzkkbmzrbi
@@ -378,6 +380,29 @@ packages:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.17.1
+
+  /@openpanel/nextjs/0.0.8-beta_h6dj7hpgrjuca5cqek3dk6bqim:
+    resolution: {integrity: sha512-rSPTKtBOEJ6ewYcJuLdAlGv9YO7FfY6dR8kfJ9k9mMtIJjmwRbtGqXMHRhrGhviQ7p2sRPADG/BaNwEoZKi3Cw==}
+    peerDependencies:
+      next: ^12.0.0 || ^13.0.0 || ^14.0.0
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      '@openpanel/web': 0.0.8-beta
+      next: 14.1.4_biqbaboplfbrettd7655fr4n2y
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
+    dev: false
+
+  /@openpanel/sdk/0.0.8-beta:
+    resolution: {integrity: sha512-Cs23tPoQqZLiG3A9C3CTPzyhurX+Q/mScaaK79/Kuvcv4vZjqUztLtLqxRx/zxeXYVbanzwR3blJCeTmABexKQ==}
+    dev: false
+
+  /@openpanel/web/0.0.8-beta:
+    resolution: {integrity: sha512-7xwG4QhXBan4r6SH+q7MrVZPS87r6UvUGHsu7dCIWDhTex+lW3CeA0NEHRvUSfH6Z+oeQ7xstVczEb0h/VikdA==}
+    dependencies:
+      '@openpanel/sdk': 0.0.8-beta
+    dev: false
 
   /@panva/hkdf/1.1.1:
     resolution: {integrity: sha512-dhPeilub1NuIG0X5Kvhh9lH4iW3ZsHlnzwgwbOlgwQ2wG1IqFzsgHqmKPk3WzsdWAeaxKJxgM0+W433RmN45GA==}

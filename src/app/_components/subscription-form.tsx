@@ -51,7 +51,12 @@ export default function SubscriptionForm() {
 						</FormItem>
 					)}
 				/>
-				<Button className="w-48" variant={'secondary'} type="submit">
+				<Button
+					data-event="join_waitlist"
+					data-type="attributes"
+					className="w-48"
+					variant={'secondary'}
+					type="submit">
 					Join the waitlist
 				</Button>
 			</form>
