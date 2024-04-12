@@ -12,6 +12,7 @@ import {
 	FormMessage,
 } from '~/components/ui/form'
 import { Button } from '~/components/ui/button'
+import { env } from '~/env'
 
 const formSchema = z.object({
 	email: z.string().email({ message: 'Invalid email' }),
@@ -26,7 +27,7 @@ export default function SubscriptionForm() {
 	})
 
 	function onSubmit(values: z.infer<typeof formSchema>) {
-		window.location.href = `https://magic.beehiiv.com/v1/8432e1f7-e24c-4571-9a87-bd4188ef0949?email=${values.email}&redirect_to=http://localhost:3000`
+		window.location.href = `https://magic.beehiiv.com/v1/8432e1f7-e24c-4571-9a87-bd4188ef0949?email=${values.email}&redirect_to=${env.NEXTAUTH_URL}`
 		form.reset()
 	}
 
