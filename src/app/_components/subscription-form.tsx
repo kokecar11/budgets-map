@@ -12,13 +12,13 @@ import {
 	FormMessage,
 } from '~/components/ui/form'
 import { Button } from '~/components/ui/button'
-import { env } from '~/env'
 
 const formSchema = z.object({
 	email: z.string().email({ message: 'Invalid email' }),
 })
 
 export default function SubscriptionForm() {
+	const URL_REDIRECT = 'https://budgets-map.vercel.app/'
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
@@ -27,7 +27,7 @@ export default function SubscriptionForm() {
 	})
 
 	function onSubmit(values: z.infer<typeof formSchema>) {
-		window.location.href = `https://magic.beehiiv.com/v1/8432e1f7-e24c-4571-9a87-bd4188ef0949?email=${values.email}&redirect_to=${env.NEXTAUTH_URL}`
+		window.location.href = `https://magic.beehiiv.com/v1/8432e1f7-e24c-4571-9a87-bd4188ef0949?email=${values.email}&redirect_to=${URL_REDIRECT}`
 		form.reset()
 	}
 
@@ -63,22 +63,4 @@ export default function SubscriptionForm() {
 			</form>
 		</Form>
 	)
-}
-{
-	/* <Input
-				className="w-full"
-				type="email"
-				placeholder="Enter your email"
-				value={email}
-				onChange={(e) => {
-					setEmail(e.currentTarget.value)
-				}}
-			/>
-			<Button asChild variant={'secondary'}>
-				<Link
-					className="w-48"
-					href={`https://magic.beehiiv.com/v1/8432e1f7-e24c-4571-9a87-bd4188ef0949?email=${email}&redirect_to=http://localhost:3000`}>
-					Join the waitlist
-				</Link>
-			</Button> */
 }

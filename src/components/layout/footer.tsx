@@ -19,10 +19,10 @@ export function Footer() {
 							height={40}
 							alt="Logo T-Record"
 						/>
-						<span>Budgets Map</span>
+						<span className="hidden sm:block">Budgets Map</span>
 					</Link>
 				</div>
-				<div className="flex space-x-6">
+				<div className="flex space-x-2 sm:space-x-6">
 					<p className="flex font-semibold text-white">
 						Made with
 						<FeHeart className="mx-1 text-2xl text-rose-600" /> by{' '}
