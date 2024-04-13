@@ -18,7 +18,7 @@ const formSchema = z.object({
 })
 
 export default function SubscriptionForm() {
-	const URL_REDIRECT = 'https://budgets-map.vercel.app/'
+	const URL_REDIRECT = 'https://www.budgetsmap.com/'
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
