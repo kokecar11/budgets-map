@@ -1,0 +1,185 @@
+"use client"
+
+import { useState } from "react"
+import { useSession } from "next-auth/react"
+import { Plus, Trash2, CheckCircle2, Circle, Copy } from "lucide-react"
+import { toast } from "sonner"
+
+import { Button } from "@workspace/ui/components/button"
+import { Card, CardContent } from "@workspace/ui/components/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/ui/components/dialog"
+
+import { BudgetItemForm } from "./budget-item-form"
+import { budgetItemApi } from "./api"
+import type { BudgetItem } from "./types"
+import type { Category } from "@/features/categories/types"
+
+interface BudgetItemsListProps {
+  budgetId: string
+  initialItems: BudgetItem[]
+  previousBudgetId?: string
+  categories: Category[]
+}
+
+export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, categories }: BudgetItemsListProps) {
+  const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]))
+  const { data: session } = useSession()
+  const [items, setItems] = useState<BudgetItem[]>(initialItems)
+  const [openForm, setOpenForm] = useState(false)
+  const [copying, setCopying] = useState(false)
+
+  const total = items.reduce((sum, item) => sum + item.planned_amount, 0)
+  const paid = items.filter((i) => i.is_paid).reduce((sum, item) => sum + item.planned_amount, 0)
+
+  function handleCreated(item: BudgetItem) {
+    setItems((prev) => [...prev, item])
+    setOpenForm(false)
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await budgetItemApi.delete(id, session?.accessToken ?? "")
+      setItems((prev) => prev.filter((i) => i.id !== id))
+      toast.success("Ítem eliminado")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al eliminar el ítem")
+    }
+  }
+
+  async function handleCopyFromPrevious() {
+    if (!previousBudgetId) return
+    if (items.length > 0 && !window.confirm("Ya tienes ítems. ¿Deseas agregar también los del mes anterior?")) return
+    setCopying(true)
+    try {
+      const token = session?.accessToken ?? ""
+      const prevItems = await budgetItemApi.list(previousBudgetId, token)
+      const created = await Promise.all(
+        prevItems.map((item) =>
+          budgetItemApi.create(
+            budgetId,
+            {
+              description: item.description,
+              planned_amount: item.planned_amount,
+              category_id: item.category_id || undefined,
+              is_paid: false,
+            },
+            token
+          )
+        )
+      )
+      setItems((prev) => [...prev, ...created])
+      toast.success("Ítems del mes anterior copiados")
+    } catch {
+      toast.error("Error al copiar los ítems")
+    } finally {
+      setCopying(false)
+    }
+  }
+
+  async function handleTogglePaid(item: BudgetItem) {
+    const updated = await budgetItemApi.update(
+      item.id,
+      { is_paid: !item.is_paid },
+      session?.accessToken ?? ""
+    )
+    setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-0.5">
+          <h3 className="font-medium">Ítems del presupuesto</h3>
+          <span className="text-muted-foreground text-sm">
+            Pagado: <strong>{paid.toLocaleString()}</strong> / Total:{" "}
+            <strong>{total.toLocaleString()}</strong>
+          </span>
+        </div>
+        <div className="flex gap-2">
+          {previousBudgetId && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCopyFromPrevious}
+              disabled={copying}
+            >
+              <Copy className="size-4" />
+              {copying ? "Copiando…" : "Copiar mes anterior"}
+            </Button>
+          )}
+          <Button size="sm" onClick={() => setOpenForm(true)}>
+            <Plus className="size-4" />
+            Agregar ítem
+          </Button>
+        </div>
+      </div>
+
+      {items.length === 0 ? (
+        <p className="text-muted-foreground text-sm text-center py-8">
+          Sin ítems aún. Agrega uno para empezar.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {items.map((item) => (
+            <Card key={item.id}>
+              <CardContent className="flex items-center gap-3 p-3">
+                <button
+                  onClick={() => handleTogglePaid(item)}
+                  className="text-muted-foreground hover:text-primary shrink-0"
+                >
+                  {item.is_paid ? (
+                    <CheckCircle2 className="size-5 text-green-500" />
+                  ) : (
+                    <Circle className="size-5" />
+                  )}
+                </button>
+                <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
+                  <div className="min-w-0">
+                    <span className={`text-sm truncate ${item.is_paid ? "line-through text-muted-foreground" : ""}`}>
+                      {item.description}
+                    </span>
+                    {item.category_id && categoryMap[item.category_id] && (
+                      <p className="text-xs text-muted-foreground">{categoryMap[item.category_id]}</p>
+                    )}
+                  </div>
+                  <span className="text-sm font-medium shrink-0">
+                    {item.planned_amount.toLocaleString()}
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive hover:text-destructive shrink-0 h-7 w-7"
+                  onClick={() => handleDelete(item.id)}
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={openForm} onOpenChange={setOpenForm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nuevo ítem</DialogTitle>
+            <DialogDescription>Agrega un gasto planificado a este presupuesto.</DialogDescription>
+          </DialogHeader>
+          <BudgetItemForm
+            budgetId={budgetId}
+            categories={categories}
+            onSuccess={handleCreated}
+            onCancel={() => setOpenForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}

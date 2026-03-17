@@ -1,0 +1,93 @@
+services:
+  # db:
+  #   image: postgres:16-alpine
+  #   container_name: budgetsmap_db
+  #   environment:
+  #     POSTGRES_USER: ${DB_USER:-postgres}
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+  #     POSTGRES_DB: ${DB_NAME:-budgetsmap}
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
+  #   restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: budgetsmap_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: budgetsmap_api
+    env_file:
+      - ./apps/api/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/api/src:/app/src
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  celery_worker:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: budgetsmap_celery_worker
+    command: celery -A src.celery_app worker --loglevel=info
+    env_file:
+      - ./apps/api/.env
+    volumes:
+      - ./apps/api/src:/app/src
+    depends_on:
+      - api
+      - redis
+    restart: unless-stopped
+
+  celery_beat:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: budgetsmap_celery_beat
+    command: celery -A src.celery_app beat --loglevel=info
+    env_file:
+      - ./apps/api/.env
+    volumes:
+      - ./apps/api/src:/app/src
+    depends_on:
+      - api
+      - redis
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: budgetsmap_web
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      API_URL: http://api:8000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web:/app/apps/web
+      - ./packages:/app/packages
+      - /app/node_modules
+      - /app/apps/web/node_modules
+      - /app/packages/ui/node_modules
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:supabase.com)",
+      "Skill(fastapi-module)",
+      "Skill(fastapi-module:*)",
+      "Bash(grep:*)",
+      "Bash(docker ps --filter \"name=budgetsmap_web\" --format \"table {{.Names}}\\\\t{{.Status}}\\\\t{{.Image}}\")",
+      "Bash(ls /Users/kokecar11/Orgs/projects/budgets-map/apps/web/app/\\\\\\(protected\\\\\\))",
+      "Bash(ls \"/Users/kokecar11/Orgs/projects/budgets-map/apps/web/app/\\(protected\\)\")",
+      "Bash(cat \"/Users/kokecar11/Orgs/projects/budgets-map/apps/web/app/\\(protected\\)/layout.tsx\")",
+      "Bash(ls -la /Users/kokecar11/Orgs/projects/budgets-map/apps/web/app/\\\\\\(protected\\\\\\)/)",
+      "Bash(cat /Users/kokecar11/Orgs/projects/budgets-map/apps/web/app/\\\\\\(protected\\\\\\)/layout.tsx)",
+      "WebFetch(domain:authjs.dev)",
+      "Bash(pnpm install --frozen-lockfile=false)",
+      "Bash(pnpm --filter @workspace/ui exec tsc --noEmit)",
+      "Bash(node -e \"const p = require\\(''/Users/kokecar11/Orgs/projects/budgets-map/packages/ui/node_modules/next/package.json''\\); console.log\\(JSON.stringify\\(p.exports?.[''./navigation''], null, 2\\)\\)\")",
+      "WebFetch(domain:ui.shadcn.com)",
+      "Bash(pnpm --filter @workspace/ui add date-fns react-day-picker@8)",
+      "Bash(pnpm --filter @workspace/ui add date-fns@3)",
+      "Bash(pnpm --filter @workspace/ui add react-day-picker@8)",
+      "Bash(pnpm --filter web add react-day-picker@8 date-fns@3)",
+      "WebFetch(domain:base-ui.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:bradestey.com)",
+      "WebFetch(domain:deepwiki.com)",
+      "WebFetch(domain:basecn.dev)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(k,v\\) for k,v in d.get\\(''dependencies'',{}\\).items\\(\\)]\")",
+      "Bash(node -e \"const r = require\\(''/Users/kokecar11/Orgs/projects/budgets-map/node_modules/radix-ui''\\); console.log\\(Object.keys\\(r\\).filter\\(k => k.toLowerCase\\(\\).includes\\(''switch''\\)\\)\\)\")",
+      "Bash(node -e \"const exports = require\\(''/Users/kokecar11/Orgs/projects/budgets-map/node_modules/.pnpm/radix-ui@1.4.3_@types+react-dom@19.2.3_@types+react@19.2.14__@types+react@19.2.14_react_8630af8f756c6a5269f4297295494860/node_modules/radix-ui/package.json''\\).exports; console.log\\(Object.keys\\(exports\\).filter\\(k => k.toLowerCase\\(\\).includes\\(''switch''\\)\\)\\)\")",
+      "Bash(node -e \"const r = require\\(''/Users/kokecar11/Orgs/projects/budgets-map/node_modules/.pnpm/radix-ui@1.4.3_@types+react-dom@19.2.3_@types+react@19.2.14__@types+react@19.2.14_react_8630af8f756c6a5269f4297295494860/node_modules/radix-ui/dist/index.js''\\); const keys = Object.keys\\(r\\); console.log\\(keys.filter\\(k => /switch/i.test\\(k\\)\\).join\\(''\\\\n''\\) || ''NO SWITCH''\\)\")",
+      "Bash(node -e \"const r = require\\(''/Users/kokecar11/Orgs/projects/budgets-map/node_modules/.pnpm/radix-ui@1.4.3_@types+react-dom@19.2.3_@types+react@19.2.14__@types+react@19.2.14_react_8630af8f756c6a5269f4297295494860/node_modules/radix-ui/dist/index.js''\\); console.log\\(Object.keys\\(r.Switch\\).join\\(''\\\\n''\\)\\)\")"
+    ]
+  }
+}
