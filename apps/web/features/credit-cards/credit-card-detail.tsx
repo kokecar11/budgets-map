@@ -356,17 +356,19 @@ export function CreditCardDetail({
                       <p className="text-xl font-bold">{selectedCharge.interest_rate}%</p>
                     </div>
                   ) : null}
-                  {categoryMap[selectedCharge.category_id] && (
-                    <div className="rounded-lg border p-3">
-                      <p className="text-xs text-muted-foreground mb-1">Categoría</p>
-                      <p className="text-sm font-semibold">
-                        {categoryMap[selectedCharge.category_id].icon
-                          ? `${categoryMap[selectedCharge.category_id].icon} `
-                          : ""}
-                        {categoryMap[selectedCharge.category_id].name}
-                      </p>
-                    </div>
-                  )}
+                  {(() => {
+                    const cat = categoryMap[selectedCharge.category_id]
+                    if (!cat) return null
+                    return (
+                      <div className="rounded-lg border p-3">
+                        <p className="text-xs text-muted-foreground mb-1">Categoría</p>
+                        <p className="text-sm font-semibold">
+                          {cat.icon ? `${cat.icon} ` : ""}
+                          {cat.name}
+                        </p>
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 {/* Tabla de amortización */}

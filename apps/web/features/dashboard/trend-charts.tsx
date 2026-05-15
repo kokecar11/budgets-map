@@ -57,8 +57,10 @@ export function TrendCharts({ transactions, categories }: TrendChartsProps) {
       const diff = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth())
       if (diff < 0 || diff > 5) continue
       const idx = 5 - diff
-      if (tx.type === "income")  months[idx].income  += tx.amount
-      if (tx.type === "expense") months[idx].expense += tx.amount
+      const bucket = months[idx]
+      if (!bucket) continue
+      if (tx.type === "income")  bucket.income  += tx.amount
+      if (tx.type === "expense") bucket.expense += tx.amount
     }
     return months
   }, [transactions])

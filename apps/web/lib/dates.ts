@@ -6,7 +6,7 @@
  * This helper keeps the calendar date as-is regardless of timezone.
  */
 export function parseDateParts(dateStr: string): { year: number; month: number; day: number } {
-  const [y, m, d] = dateStr.slice(0, 10).split("-").map(Number)
+  const [y, m, d] = dateStr.slice(0, 10).split("-").map(Number) as [number, number, number]
   return { year: y, month: m - 1, day: d } // month is 0-indexed like Date.getMonth()
 }
 

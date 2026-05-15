@@ -56,8 +56,8 @@ export function exportTransactionsPDF(
   const categoryRows = Object.entries(catMap)
     .map(([id, amount]) => [categoryMap[id] ?? "Sin categoría", fmt(amount), pct(amount, totalExpense)])
     .sort((a, b) => {
-      const aVal = parseFloat(a[1].replace(/[^0-9.]/g, ""))
-      const bVal = parseFloat(b[1].replace(/[^0-9.]/g, ""))
+      const aVal = parseFloat((a[1] ?? "").replace(/[^0-9.]/g, ""))
+      const bVal = parseFloat((b[1] ?? "").replace(/[^0-9.]/g, ""))
       return bVal - aVal
     })
 
