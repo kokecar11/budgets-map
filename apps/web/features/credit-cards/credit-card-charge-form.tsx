@@ -117,7 +117,7 @@ export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCa
             <Field>
               <FieldLabel>Fecha</FieldLabel>
               <DatePicker
-                value={field.state.value}
+                value={field.state.value ?? ""}
                 onChange={field.handleChange}
               />
             </Field>

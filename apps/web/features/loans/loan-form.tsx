@@ -144,7 +144,7 @@ export function LoanForm({ onSuccess, onCancel }: LoanFormProps) {
             {(field) => (
               <Field>
                 <FieldLabel>Fecha inicio</FieldLabel>
-                <DatePicker value={field.state.value} onChange={field.handleChange} />
+                <DatePicker value={field.state.value ?? ""} onChange={field.handleChange} />
               </Field>
             )}
           </form.Field>
@@ -153,7 +153,7 @@ export function LoanForm({ onSuccess, onCancel }: LoanFormProps) {
             {(field) => (
               <Field>
                 <FieldLabel>Fecha fin</FieldLabel>
-                <DatePicker value={field.state.value} onChange={field.handleChange} />
+                <DatePicker value={field.state.value ?? ""} onChange={field.handleChange} />
               </Field>
             )}
           </form.Field>

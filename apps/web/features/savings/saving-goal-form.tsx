@@ -115,7 +115,7 @@ export function SavingGoalForm({ onSuccess, onCancel, initialValues }: SavingGoa
             <Field>
               <FieldLabel>Fecha límite <span className="text-muted-foreground">(opcional)</span></FieldLabel>
               <DatePicker
-                value={field.state.value}
+                value={field.state.value ?? ""}
                 onChange={field.handleChange}
                 placeholder="Sin fecha límite"
               />
