@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { budgetApi, budgetItemApi } from "@/features/budgets/api"
 import { categoryApi } from "@/features/categories/api"
+import { transactionApi } from "@/features/transactions/api"
 import { BudgetItemsList } from "@/features/budgets/budget-items-list"
 import { BudgetAlertSettings } from "@/features/budgets/budget-alert-settings"
 
@@ -18,11 +19,12 @@ export default async function BudgetDetailPage({
   const session = await auth()
   const token = session?.accessToken ?? ""
 
-  const [budget, items, allBudgets, categories] = await Promise.all([
+  const [budget, items, allBudgets, categories, transactions] = await Promise.all([
     budgetApi.get(id, token),
     budgetItemApi.list(id, token),
     budgetApi.list(token),
     categoryApi.list(token).catch(() => []),
+    transactionApi.list(token).catch(() => []),
   ])
 
   // Find previous month's budget
@@ -46,6 +48,8 @@ export default async function BudgetDetailPage({
         initialItems={items}
         previousBudgetId={previousBudget?.id}
         categories={categories}
+        transactions={transactions}
+        budget={budget}
       />
       <BudgetAlertSettings budget={budget} />
     </div>

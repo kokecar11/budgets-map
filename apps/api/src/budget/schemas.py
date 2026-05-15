@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from enum import Enum
 
 
 # --- Budget ---
@@ -65,3 +66,20 @@ class BudgetItemResponse(BudgetItemBase):
     updated_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+
+class BudgetItemWithActual(BudgetItemResponse):
+    actual_amount: Optional[float] = None
+    difference: Optional[float] = None
+
+
+class AlertStatus(str, Enum):
+    ok = "ok"
+    warning = "warning"
+    over_budget = "over_budget"
+
+
+class BudgetSummaryResponse(BaseModel):
+    total_planned: float
+    total_actual: float
+    alert_status: AlertStatus

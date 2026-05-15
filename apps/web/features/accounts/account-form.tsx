@@ -14,8 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select"
+import { Switch } from "@workspace/ui/components/switch"
 import { accountApi } from "./api"
-import type { Account, AccountCreate } from "./types"
+import type { Account, AccountCreate, AccountUpdate } from "./types"
 
 const ACCOUNT_TYPES = [
   { value: "bank", label: "Banco" },
@@ -26,34 +27,44 @@ const ACCOUNT_TYPES = [
 interface AccountFormProps {
   onSuccess: (account: Account) => void
   onCancel: () => void
+  initialValues?: Account
 }
 
-export function AccountForm({ onSuccess, onCancel }: AccountFormProps) {
+export function AccountForm({ onSuccess, onCancel, initialValues }: AccountFormProps) {
   const { data: session } = useSession()
+  const isEdit = Boolean(initialValues)
 
   const form = useForm({
     defaultValues: {
-      name: "",
-      type: "bank" as AccountCreate["type"],
+      name: initialValues?.name ?? "",
+      type: (initialValues?.type ?? "bank") as AccountCreate["type"],
       balance: "0",
+      is_active: initialValues?.is_active ?? true,
     },
     onSubmit: async ({ value }) => {
       try {
-        const payload: AccountCreate = {
-          name: value.name,
-          type: value.type,
-          balance: Number(value.balance),
+        const token = session?.accessToken ?? ""
+        let account: Account
+        if (isEdit && initialValues) {
+          const payload: AccountUpdate = {
+            name: value.name,
+            type: value.type,
+            is_active: value.is_active,
+          }
+          account = await accountApi.update(initialValues.id, payload, token)
+          toast.success("Cuenta actualizada")
+        } else {
+          const payload: AccountCreate = {
+            name: value.name,
+            type: value.type,
+            balance: Number(value.balance),
+          }
+          account = await accountApi.create(payload, token)
+          toast.success("Cuenta creada exitosamente")
         }
-        const account = await accountApi.create(
-          payload,
-          session?.accessToken ?? "",
-        )
-        toast.success("Cuenta creada exitosamente")
         onSuccess(account)
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Error al crear la cuenta",
-        )
+        toast.error(err instanceof Error ? err.message : "Error al guardar la cuenta")
       }
     },
   })
@@ -113,22 +124,41 @@ export function AccountForm({ onSuccess, onCancel }: AccountFormProps) {
           )}
         </form.Field>
 
-        <form.Field name="balance">
-          {(field) => (
-            <Field>
-              <FieldLabel htmlFor="balance">Saldo inicial</FieldLabel>
-              <Input
-                id="balance"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-              />
-            </Field>
-          )}
-        </form.Field>
+        {!isEdit && (
+          <form.Field name="balance">
+            {(field) => (
+              <Field>
+                <FieldLabel htmlFor="balance">Saldo inicial</FieldLabel>
+                <Input
+                  id="balance"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                />
+              </Field>
+            )}
+          </form.Field>
+        )}
+
+        {isEdit && (
+          <form.Field name="is_active">
+            {(field) => (
+              <Field>
+                <div className="flex items-center justify-between">
+                  <FieldLabel htmlFor="is_active">Cuenta activa</FieldLabel>
+                  <Switch
+                    id="is_active"
+                    checked={field.state.value}
+                    onCheckedChange={field.handleChange}
+                  />
+                </div>
+              </Field>
+            )}
+          </form.Field>
+        )}
 
         <div className="flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onCancel}>
@@ -137,7 +167,7 @@ export function AccountForm({ onSuccess, onCancel }: AccountFormProps) {
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creando…" : "Crear cuenta"}
+                {isSubmitting ? "Guardando…" : isEdit ? "Guardar cambios" : "Crear cuenta"}
               </Button>
             )}
           </form.Subscribe>

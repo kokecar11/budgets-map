@@ -42,3 +42,8 @@ venv/
 # Misc
 .DS_Store
 *.pem
+
+.agents/
+.atl/
+skills-lock.json
+skills/

@@ -19,8 +19,10 @@ import type { SavingGoal } from "@/features/savings/types"
 import type { Loan } from "@/features/loans/types"
 import type { Category } from "@/features/categories/types"
 import type { Budget, BudgetItem } from "@/features/budgets/types"
+import { parseDateParts, fmtDateLocal } from "@/lib/dates"
 import { TrendCharts } from "./trend-charts"
 import { BudgetAlerts } from "./budget-alerts"
+import { RecurringSummary } from "./recurring-summary"
 import { PremiumGate } from "@/components/premium-gate"
 
 interface DashboardContentProps {
@@ -61,26 +63,40 @@ export function DashboardContent({
     [accounts]
   )
 
-  const { monthlyIncome, monthlyExpenses, monthTxnIncome, monthTxnExpense } = useMemo(() => {
+  const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1
+  const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear
+
+  const { monthlyIncome, monthlyExpenses, monthTxnIncome, monthTxnExpense, prevIncome, prevExpenses } = useMemo(() => {
     let monthlyIncome = 0
     let monthlyExpenses = 0
     let monthTxnIncome = 0
     let monthTxnExpense = 0
+    let prevIncome = 0
+    let prevExpenses = 0
     for (const t of transactions) {
-      const d = new Date(t.date)
-      if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+      const { month: m, year: y } = parseDateParts(t.date)
+      if (m === currentMonth && y === currentYear) {
         if (t.type === "income") { monthlyIncome += t.amount; monthTxnIncome++ }
         if (t.type === "expense") { monthlyExpenses += t.amount; monthTxnExpense++ }
+      } else if (m === prevMonth && y === prevYear) {
+        if (t.type === "income") prevIncome += t.amount
+        if (t.type === "expense") prevExpenses += t.amount
       }
     }
-    return { monthlyIncome, monthlyExpenses, monthTxnIncome, monthTxnExpense }
-  }, [transactions, currentMonth, currentYear])
+    return { monthlyIncome, monthlyExpenses, monthTxnIncome, monthTxnExpense, prevIncome, prevExpenses }
+  }, [transactions, currentMonth, currentYear, prevMonth, prevYear])
 
   const totalBalance = useMemo(
     () => accounts.filter((a) => a.is_active).reduce((s, a) => s + a.balance, 0),
     [accounts]
   )
   const netMonth = monthlyIncome - monthlyExpenses
+  const prevNet = prevIncome - prevExpenses
+
+  function trendPct(current: number, prev: number): number | null {
+    if (prev === 0) return null
+    return ((current - prev) / prev) * 100
+  }
 
   const recentTransactions = useMemo(
     () =>
@@ -100,19 +116,12 @@ export function DashboardContent({
     return map
   }, [transactions])
 
-  const spentByCategoryMap = useMemo(() => {
-    const map: Record<string, number> = {}
-    for (const t of transactions) {
-      if (t.type !== "expense" || !t.category_id) continue
-      const d = new Date(t.date)
-      if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
-        map[t.category_id] = (map[t.category_id] ?? 0) + t.amount
-      }
-    }
-    return map
-  }, [transactions, currentMonth, currentYear])
 
   const totalPlanned = budgetItems.reduce((s, i) => s + i.planned_amount, 0)
+  const totalSpentOnBudget = budgetItems.reduce((s, i) => {
+    const spent = i.actual_amount ?? (i.is_paid ? i.planned_amount : 0)
+    return s + spent
+  }, 0)
   const activeGoals = savingGoals.filter((g) => g.status === "active")
   const activeLoans = loans.filter((l) => l.status === "active")
   const totalDebt = activeLoans.reduce((s, l) => s + l.balance, 0)
@@ -148,6 +157,7 @@ export function DashboardContent({
           sub={`${monthTxnIncome} transacciones`}
           icon={<TrendingUp className="size-5" />}
           color="neutral"
+          trend={{ pct: trendPct(monthlyIncome, prevIncome), positiveIsGood: true }}
         />
         <StatCard
           title="Gastos del Mes"
@@ -155,6 +165,7 @@ export function DashboardContent({
           sub={`${monthTxnExpense} transacciones`}
           icon={<TrendingDown className="size-5" />}
           color="red"
+          trend={{ pct: trendPct(monthlyExpenses, prevExpenses), positiveIsGood: false }}
         />
         <StatCard
           title="Balance Neto"
@@ -163,6 +174,7 @@ export function DashboardContent({
           icon={netMonth >= 0 ? <Scale className="size-5" /> : <ArrowUpRight className="size-5" />}
           color={netMonth >= 0 ? "green" : "red"}
           prefix={netMonth >= 0 ? "+" : "-"}
+          trend={{ pct: trendPct(netMonth, prevNet), positiveIsGood: true }}
         />
       </div>
 
@@ -170,12 +182,19 @@ export function DashboardContent({
       {isPro && (
         <BudgetAlerts
           budgetItems={budgetItems}
-          spentByCategoryMap={spentByCategoryMap}
           categories={categories}
           warningPct={currentBudget?.alert_warning_pct ?? 80}
           dangerPct={currentBudget?.alert_danger_pct ?? 100}
         />
       )}
+
+      {/* Recurring this month */}
+      <RecurringSummary
+        transactions={transactions}
+        categories={categories}
+        currentMonth={currentMonth}
+        currentYear={currentYear}
+      />
 
       {/* Recent Transactions */}
       <div className="rounded-xl border bg-card overflow-hidden">
@@ -217,9 +236,7 @@ export function DashboardContent({
                   return (
                     <tr key={t.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="px-6 py-3 text-muted-foreground whitespace-nowrap text-xs">
-                        {new Date(t.date).toLocaleDateString("es-MX", {
-                          day: "2-digit", month: "short", year: "2-digit",
-                        })}
+                        {fmtDateLocal(t.date)}
                       </td>
                       <td className="px-6 py-3 max-w-40 truncate font-medium">
                         {t.description || "—"}
@@ -255,7 +272,7 @@ export function DashboardContent({
               </div>
               <div>
                 <p className="font-semibold">Presupuesto — {currentBudget.name}</p>
-                <p className="text-xs text-muted-foreground">Total gastado vs planeado</p>
+                <p className="text-xs text-muted-foreground">Ejecución de ítems presupuestados</p>
               </div>
             </div>
             <Link href={`/budgets/${currentBudget.id}`} className="flex items-center gap-1 text-sm text-primary hover:underline">
@@ -270,28 +287,28 @@ export function DashboardContent({
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">
                     {totalPlanned > 0
-                      ? `${((monthlyExpenses / totalPlanned) * 100).toFixed(0)}% del presupuesto utilizado`
+                      ? `${((totalSpentOnBudget / totalPlanned) * 100).toFixed(0)}% del presupuesto utilizado`
                       : "Sin presupuesto definido"}
                   </span>
-                  {monthlyExpenses > totalPlanned && (
+                  {totalSpentOnBudget > totalPlanned && (
                     <span className="text-xs text-destructive font-medium">
-                      · Excedido {fmt(monthlyExpenses - totalPlanned)}
+                      · Excedido {fmt(totalSpentOnBudget - totalPlanned)}
                     </span>
                   )}
-                  {monthlyExpenses <= totalPlanned && totalPlanned > 0 && (
+                  {totalSpentOnBudget <= totalPlanned && totalPlanned > 0 && (
                     <span className="text-xs text-green-500 font-medium">
-                      · Disponible {fmt(totalPlanned - monthlyExpenses)}
+                      · Disponible {fmt(totalPlanned - totalSpentOnBudget)}
                     </span>
                   )}
                 </div>
                 <span className="tabular-nums text-muted-foreground text-xs font-medium">
-                  {fmt(monthlyExpenses)} / {fmt(totalPlanned)}
+                  {fmt(totalSpentOnBudget)} / {fmt(totalPlanned)}
                 </span>
               </div>
               <div className="h-2.5 rounded-full bg-muted overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all w-(--bar) ${budgetBarColor(monthlyExpenses, totalPlanned)}`}
-                  style={{ "--bar": `${Math.min(100, totalPlanned > 0 ? (monthlyExpenses / totalPlanned) * 100 : 0)}%` } as React.CSSProperties}
+                  className={`h-full rounded-full transition-all w-(--bar) ${budgetBarColor(totalSpentOnBudget, totalPlanned, currentBudget?.alert_warning_pct ?? 80, currentBudget?.alert_danger_pct ?? 100)}`}
+                  style={{ "--bar": `${Math.min(100, totalPlanned > 0 ? (totalSpentOnBudget / totalPlanned) * 100 : 0)}%` } as React.CSSProperties}
                 />
               </div>
             </div>
@@ -299,10 +316,10 @@ export function DashboardContent({
             {/* Per-item list */}
             <div className="divide-y">
               {budgetItems.slice(0, 5).map((item) => {
-                const spent = item.category_id
-                  ? (spentByCategoryMap[item.category_id] ?? 0)
-                  : item.is_paid ? item.planned_amount : 0
+
+                const spent = item.actual_amount ?? (item.is_paid ? item.planned_amount : 0)
                 const categoryName = item.category_id ? (categoryMap[item.category_id]?.name ?? null) : null
+                const isOver = spent > item.planned_amount
                 return (
                   <div key={item.id} className="flex items-center justify-between py-3">
                     <div className="flex items-center gap-2 min-w-0">
@@ -310,19 +327,26 @@ export function DashboardContent({
                       {categoryName && (
                         <span className="text-xs text-muted-foreground shrink-0">({categoryName})</span>
                       )}
-                      {!item.category_id && item.is_paid && (
+                      {item.is_paid && (
                         <span className="text-xs bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded-full shrink-0 font-medium">
                           Pagado
                         </span>
                       )}
                     </div>
-                    <span className="tabular-nums text-sm text-muted-foreground whitespace-nowrap ml-4">
+                    <span className={`tabular-nums text-sm whitespace-nowrap ml-4 ${isOver ? "text-destructive font-medium" : "text-muted-foreground"}`}>
                       {fmt(spent)} / {fmt(item.planned_amount)}
                     </span>
                   </div>
                 )
               })}
             </div>
+            {budgetItems.length > 5 && (
+              <div className="pt-3 text-center">
+                <Link href={`/budgets/${currentBudget!.id}`} className="text-xs text-primary hover:underline">
+                  Ver todos los ítems ({budgetItems.length}) →
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -498,6 +522,7 @@ function StatCard({
   icon,
   color,
   prefix,
+  trend,
 }: {
   title: string
   value: string
@@ -505,6 +530,7 @@ function StatCard({
   icon: React.ReactNode
   color: "primary" | "neutral" | "green" | "red"
   prefix?: string
+  trend?: { pct: number | null; positiveIsGood: boolean }
 }) {
   const styles = {
     primary: {
@@ -529,6 +555,18 @@ function StatCard({
     },
   }
   const s = styles[color]
+
+  const trendBadge = (() => {
+    if (!trend || trend.pct === null) return null
+    const up = trend.pct >= 0
+    const good = up === trend.positiveIsGood
+    return (
+      <span className={`text-[11px] font-semibold tabular-nums ${good ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
+        {up ? "↑" : "↓"} {Math.abs(trend.pct).toFixed(0)}%
+      </span>
+    )
+  })()
+
   return (
     <div className={`rounded-xl border bg-card overflow-hidden ${s.card}`}>
       <div className="px-6 py-5">
@@ -536,9 +574,12 @@ function StatCard({
           <p className={`text-xs font-semibold tracking-widest uppercase ${s.label}`}>{title}</p>
           <span className={s.icon}>{icon}</span>
         </div>
-        <p className="text-2xl font-bold">
-          {prefix}{value}
-        </p>
+        <div className="flex items-end justify-between gap-2">
+          <p className="text-2xl font-bold">
+            {prefix}{value}
+          </p>
+          {trendBadge}
+        </div>
         <p className={`text-xs mt-1 ${s.label}`}>{sub}</p>
       </div>
     </div>
@@ -560,11 +601,11 @@ function TypeBadge({ type }: { type: Transaction["type"] }) {
   )
 }
 
-function budgetBarColor(spent: number, planned: number): string {
+function budgetBarColor(spent: number, planned: number, warningPct = 80, dangerPct = 100): string {
   if (planned === 0) return "bg-muted-foreground"
   const pct = (spent / planned) * 100
-  if (pct > 100) return "bg-destructive"
-  if (pct >= 80) return "bg-yellow-400"
+  if (pct >= dangerPct) return "bg-destructive"
+  if (pct >= warningPct) return "bg-yellow-400"
   return "bg-green-500"
 }
 

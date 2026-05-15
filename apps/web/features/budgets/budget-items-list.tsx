@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useSession } from "next-auth/react"
-import { Plus, Trash2, CheckCircle2, Circle, Copy } from "lucide-react"
+import { Plus, Trash2, CheckCircle2, Circle, Copy, Link } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@workspace/ui/components/button"
@@ -16,23 +16,28 @@ import {
 } from "@workspace/ui/components/dialog"
 
 import { BudgetItemForm } from "./budget-item-form"
+import { LinkTransactionDialog } from "./link-transaction-dialog"
 import { budgetItemApi } from "./api"
-import type { BudgetItem } from "./types"
+import type { BudgetItem, Budget } from "./types"
 import type { Category } from "@/features/categories/types"
+import type { Transaction } from "@/features/transactions/types"
 
 interface BudgetItemsListProps {
   budgetId: string
   initialItems: BudgetItem[]
   previousBudgetId?: string
   categories: Category[]
+  transactions: Transaction[]
+  budget: Budget
 }
 
-export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, categories }: BudgetItemsListProps) {
+export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, categories, transactions, budget }: BudgetItemsListProps) {
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]))
   const { data: session } = useSession()
   const [items, setItems] = useState<BudgetItem[]>(initialItems)
   const [openForm, setOpenForm] = useState(false)
   const [copying, setCopying] = useState(false)
+  const [linkTarget, setLinkTarget] = useState<BudgetItem | null>(null)
 
   const total = items.reduce((sum, item) => sum + item.planned_amount, 0)
   const paid = items.filter((i) => i.is_paid).reduce((sum, item) => sum + item.planned_amount, 0)
@@ -91,6 +96,21 @@ export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, cate
     setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
   }
 
+  async function handleLink(item: BudgetItem, transactionId: string | null) {
+    try {
+      const updated = await budgetItemApi.update(
+        item.id,
+        { transaction_id: transactionId },
+        session?.accessToken ?? ""
+      )
+      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+      toast.success(transactionId ? "Transacción vinculada" : "Transacción desvinculada")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al vincular la transacción")
+      throw err
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -147,11 +167,29 @@ export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, cate
                     {item.category_id && categoryMap[item.category_id] && (
                       <p className="text-xs text-muted-foreground">{categoryMap[item.category_id]}</p>
                     )}
+                    {item.actual_amount != null && (
+                      <p className="text-xs text-muted-foreground">
+                        Real: <strong>{item.actual_amount.toLocaleString()}</strong>
+                        {item.difference != null && (
+                          <span className={item.difference >= 0 ? " text-green-600" : " text-red-600"}>
+                            {" "}({item.difference >= 0 ? "+" : ""}{item.difference.toLocaleString()})
+                          </span>
+                        )}
+                      </p>
+                    )}
                   </div>
                   <span className="text-sm font-medium shrink-0">
                     {item.planned_amount.toLocaleString()}
                   </span>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-primary shrink-0 h-7 w-7"
+                  onClick={() => setLinkTarget(item)}
+                >
+                  <Link className="size-3.5" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -180,6 +218,17 @@ export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, cate
           />
         </DialogContent>
       </Dialog>
+
+      {linkTarget && (
+        <LinkTransactionDialog
+          open={!!linkTarget}
+          onOpenChange={(open) => { if (!open) setLinkTarget(null) }}
+          item={linkTarget}
+          transactions={transactions}
+          budget={budget}
+          onLink={handleLink}
+        />
+      )}
     </div>
   )
 }

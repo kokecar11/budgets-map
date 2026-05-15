@@ -17,7 +17,6 @@ class AccountCreate(AccountBase):
 class AccountUpdate(BaseModel):
     name: Optional[str] = None
     type: Optional[Literal["bank", "cash", "digital_wallet"]] = None
-    balance: Optional[float] = None
     is_active: Optional[bool] = None
 
 

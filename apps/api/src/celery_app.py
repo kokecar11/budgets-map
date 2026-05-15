@@ -1,10 +1,13 @@
+import os
 from celery import Celery
 from celery.schedules import crontab
 
+_redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+
 celery_app = Celery(
     "budgetsmap",
-    broker="redis://redis:6379/0",
-    backend="redis://redis:6379/0",
+    broker=_redis_url,
+    backend=_redis_url,
     include=["src.tasks.recurring_transactions"],
 )
 

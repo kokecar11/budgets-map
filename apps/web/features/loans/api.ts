@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api"
-import type { Loan, LoanCreate, LoanUpdate, LoanPayment, LoanPaymentCreate } from "./types"
+import type { Loan, LoanCreate, LoanUpdate, LoanPayment, LoanPaymentCreate, LoanAmortization } from "./types"
 
 export const loanApi = {
   list: (token: string) =>
@@ -45,4 +45,9 @@ export const loanPaymentApi = {
       method: "DELETE",
       token,
     }),
+}
+
+export const loanAmortizationApi = {
+  list: (loanId: string, token: string) =>
+    apiFetch<LoanAmortization[]>(`/api/v1/loans/${loanId}/amortization`, { token }),
 }

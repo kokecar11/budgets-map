@@ -49,6 +49,15 @@ async def update_account(
     return await service.update(id, data)
 
 
+@router.post("/{id}/recalculate", response_model=AccountResponse)
+async def recalculate_account_balance(
+    id: str,
+    _: CurrentUser,
+    service: AccountService = Depends(get_account_service),
+):
+    return await service.recalculate_balance(id)
+
+
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_account(
     id: str,

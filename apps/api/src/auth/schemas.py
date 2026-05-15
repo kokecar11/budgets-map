@@ -38,6 +38,11 @@ class SignOutRequest(BaseModel):
     refresh_token: str
 
 
+class ConfirmRequest(BaseModel):
+    token_hash: str
+    type: Literal["email", "signup", "recovery", "invite"]
+
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
@@ -45,6 +50,9 @@ class TokenResponse(BaseModel):
     expires_in: int
     user_id: str
     email: str
+    name: str = ""
+    currency: str = "COP"
+    plan: str = "free"
     requires_confirmation: bool = False
 
 

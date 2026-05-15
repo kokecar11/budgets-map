@@ -6,13 +6,44 @@ import Credentials from "next-auth/providers/credentials"
 export const { auth, handlers } = NextAuth({
   providers: [
     Credentials({
+      id: "confirm",
+      credentials: {
+        token_hash: {},
+        type: {},
+      },
+      async authorize(credentials) {
+        const requestConfirm = await fetch(
+          `${process.env.API_URL ?? "http://api:8000"}/api/v1/auth/confirm`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              token_hash: credentials.token_hash,
+              type: credentials.type,
+            }),
+          }
+        )
+        if (!requestConfirm.ok) return null
+        const res = await requestConfirm.json()
+        return {
+          id: res.user_id,
+          name: res.name,
+          email: res.email,
+          currency: res.currency,
+          plan: res.plan ?? "free",
+          access_token: res.access_token,
+          refresh_token: res.refresh_token,
+        }
+      },
+    }),
+    Credentials({
       credentials: {
         email: { label: "Email" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         const requestSignIn = await fetch(
-          `http://api:8000/api/v1/auth/signin`,
+          `${process.env.API_URL ?? "http://api:8000"}/api/v1/auth/signin`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -23,29 +54,15 @@ export const { auth, handlers } = NextAuth({
           }
         )
         if (!requestSignIn.ok) return null
-        const responseSignIn = await requestSignIn.json()
-        console.log("responseSignIn:",responseSignIn)
-        const requestMe = await fetch(
-          `http://api:8000/api/v1/auth/me`,
-          {
-            method: "GET",
-            headers: { 
-              "Content-Type": "application/json", 
-              "Authorization": `Bearer ${responseSignIn.access_token}` 
-            },
-          }
-        )
-        if (!requestMe.ok) return null
-        const responseMe = await requestMe.json()
-        console.log("responseMe:",responseMe)
+        const res = await requestSignIn.json()
         return {
-          id: responseMe.id,
-          name: responseMe.name,
-          email: responseMe.email,
-          currency: responseMe.currency,
-          plan: responseMe.plan ?? "free",
-          access_token: responseSignIn.access_token,
-          refresh_token: responseSignIn.refresh_token,
+          id: res.user_id,
+          name: res.name,
+          email: res.email,
+          currency: res.currency,
+          plan: res.plan ?? "free",
+          access_token: res.access_token,
+          refresh_token: res.refresh_token,
         }
       },
     }),

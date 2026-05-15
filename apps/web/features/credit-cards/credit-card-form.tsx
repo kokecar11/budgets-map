@@ -8,38 +8,54 @@ import { Button } from "@workspace/ui/components/button"
 import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
 import { creditCardApi } from "./api"
-import type { CreditCard, CreditCardCreate } from "./types"
+import type { CreditCard, CreditCardCreate, CreditCardUpdate } from "./types"
 
 interface CreditCardFormProps {
   onSuccess: (card: CreditCard) => void
   onCancel: () => void
+  initialValues?: CreditCard
 }
 
-export function CreditCardForm({ onSuccess, onCancel }: CreditCardFormProps) {
+export function CreditCardForm({ onSuccess, onCancel, initialValues }: CreditCardFormProps) {
   const { data: session } = useSession()
+  const isEdit = Boolean(initialValues)
 
   const form = useForm({
     defaultValues: {
-      alias: "",
-      credit_limit: "",
-      cutoff_day: "20",
-      payment_day: "5",
-      interest_rate: "",
+      alias: initialValues?.alias ?? "",
+      credit_limit: initialValues?.credit_limit?.toString() ?? "",
+      cutoff_day: initialValues?.cutoff_day?.toString() ?? "20",
+      payment_day: initialValues?.payment_day?.toString() ?? "5",
+      interest_rate: initialValues?.interest_rate?.toString() ?? "",
     },
     onSubmit: async ({ value }) => {
       try {
-        const payload: CreditCardCreate = {
-          alias: value.alias,
-          credit_limit: Number(value.credit_limit),
-          cutoff_day: Number(value.cutoff_day),
-          payment_day: Number(value.payment_day),
-          interest_rate: Number(value.interest_rate),
+        const token = session?.accessToken ?? ""
+        let card: CreditCard
+        if (isEdit && initialValues) {
+          const payload: CreditCardUpdate = {
+            alias: value.alias,
+            credit_limit: Number(value.credit_limit),
+            cutoff_day: Number(value.cutoff_day),
+            payment_day: Number(value.payment_day),
+            interest_rate: Number(value.interest_rate),
+          }
+          card = await creditCardApi.update(initialValues.id, payload, token)
+          toast.success("Tarjeta actualizada")
+        } else {
+          const payload: CreditCardCreate = {
+            alias: value.alias,
+            credit_limit: Number(value.credit_limit),
+            cutoff_day: Number(value.cutoff_day),
+            payment_day: Number(value.payment_day),
+            interest_rate: Number(value.interest_rate),
+          }
+          card = await creditCardApi.create(payload, token)
+          toast.success("Tarjeta creada exitosamente")
         }
-        const card = await creditCardApi.create(payload, session?.accessToken ?? "")
-        toast.success("Tarjeta creada exitosamente")
         onSuccess(card)
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Error al crear la tarjeta")
+        toast.error(err instanceof Error ? err.message : "Error al guardar la tarjeta")
       }
     },
   })
@@ -122,7 +138,7 @@ export function CreditCardForm({ onSuccess, onCancel }: CreditCardFormProps) {
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creando…" : "Crear tarjeta"}
+                {isSubmitting ? "Guardando…" : isEdit ? "Guardar cambios" : "Crear tarjeta"}
               </Button>
             )}
           </form.Subscribe>

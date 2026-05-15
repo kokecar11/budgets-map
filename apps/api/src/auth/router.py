@@ -3,6 +3,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from src.auth.dependencies import get_auth_service, get_current_user
 from src.auth.schemas import (
+    ConfirmRequest,
     IdTokenSignInRequest,
     RefreshTokenRequest,
     SignInRequest,
@@ -32,6 +33,20 @@ async def sign_up(
     their email before signing in.
     """
     return await service.sign_up(data)
+
+
+@router.post("/confirm", response_model=TokenResponse)
+async def confirm_email(
+    data: ConfirmRequest,
+    service: AuthService = Depends(get_auth_service),
+):
+    """
+    Confirm a user's email address using the token_hash from the confirmation link.
+
+    The token_hash and type values are extracted from the confirmation URL that
+    Supabase sends to the user's inbox. On success a full session is returned.
+    """
+    return await service.confirm_email(data.token_hash, data.type)
 
 
 @router.post("/signin", response_model=TokenResponse)

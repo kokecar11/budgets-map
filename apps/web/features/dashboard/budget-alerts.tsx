@@ -7,7 +7,6 @@ import type { Category } from "@/features/categories/types"
 
 interface BudgetAlertsProps {
   budgetItems: BudgetItem[]
-  spentByCategoryMap: Record<string, number>
   categories: Category[]
   warningPct?: number
   dangerPct?: number
@@ -24,7 +23,6 @@ interface Alert {
 
 export function BudgetAlerts({
   budgetItems,
-  spentByCategoryMap,
   categories,
   warningPct = 80,
   dangerPct = 100,
@@ -36,21 +34,22 @@ export function BudgetAlerts({
   const alerts = useMemo<Alert[]>(() => {
     const result: Alert[] = []
     for (const item of budgetItems) {
-      if (!item.category_id || item.planned_amount <= 0) continue
-      const spent = spentByCategoryMap[item.category_id] ?? 0
+      if (item.planned_amount <= 0) continue
+      const spent = item.actual_amount ?? (item.is_paid ? item.planned_amount : 0)
+      if (spent === 0) continue
       const pct = (spent / item.planned_amount) * 100
       if (pct < warningPct) continue
       result.push({
         id: item.id,
         level: pct >= dangerPct ? "danger" : "warning",
-        categoryName: categoryMap[item.category_id] ?? "Sin categoría",
+        categoryName: (item.category_id ? categoryMap[item.category_id] : null) ?? item.description,
         spent,
         planned: item.planned_amount,
         pct,
       })
     }
     return result.sort((a, b) => b.pct - a.pct)
-  }, [budgetItems, spentByCategoryMap, categoryMap, warningPct, dangerPct])
+  }, [budgetItems, categoryMap, warningPct, dangerPct])
 
   const visible = alerts.filter((a) => !dismissed.has(a.id))
   if (visible.length === 0) return null

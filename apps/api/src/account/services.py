@@ -31,6 +31,14 @@ class AccountService:
         obj = await self.get_or_404(id)
         return await self.repository.update(obj, data)
 
+    async def recalculate_balance(self, id: str) -> AccountModel:
+        obj = await self.get_or_404(id)
+        balance = await self.repository.compute_balance_from_transactions(id)
+        obj.balance = balance
+        await self.repository.db.flush()
+        await self.repository.db.refresh(obj)
+        return obj
+
     async def delete(self, id: str) -> None:
         obj = await self.get_or_404(id)
         await self.repository.delete(obj)

@@ -9,36 +9,51 @@ import { DatePicker } from "@workspace/ui/components/date-picker"
 import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
 import { savingGoalApi } from "./api"
-import type { SavingGoal, SavingGoalCreate } from "./types"
+import type { SavingGoal, SavingGoalCreate, SavingGoalUpdate } from "./types"
 
 interface SavingGoalFormProps {
   onSuccess: (goal: SavingGoal) => void
   onCancel: () => void
+  initialValues?: SavingGoal
 }
 
-export function SavingGoalForm({ onSuccess, onCancel }: SavingGoalFormProps) {
+export function SavingGoalForm({ onSuccess, onCancel, initialValues }: SavingGoalFormProps) {
   const { data: session } = useSession()
+  const isEdit = Boolean(initialValues)
 
   const form = useForm({
     defaultValues: {
-      name: "",
-      target_amount: "",
-      deadline: "",
-      description: "",
+      name: initialValues?.name ?? "",
+      target_amount: initialValues?.target_amount?.toString() ?? "",
+      deadline: initialValues?.deadline?.split("T")[0] ?? "",
+      description: initialValues?.description ?? "",
     },
     onSubmit: async ({ value }) => {
       try {
-        const payload: SavingGoalCreate = {
-          name: value.name,
-          target_amount: Number(value.target_amount),
-          deadline: value.deadline || undefined,
-          description: value.description || undefined,
+        const token = session?.accessToken ?? ""
+        let goal: SavingGoal
+        if (isEdit && initialValues) {
+          const payload: SavingGoalUpdate = {
+            name: value.name,
+            target_amount: Number(value.target_amount),
+            deadline: value.deadline || undefined,
+            description: value.description || undefined,
+          }
+          goal = await savingGoalApi.update(initialValues.id, payload, token)
+          toast.success("Meta actualizada")
+        } else {
+          const payload: SavingGoalCreate = {
+            name: value.name,
+            target_amount: Number(value.target_amount),
+            deadline: value.deadline || undefined,
+            description: value.description || undefined,
+          }
+          goal = await savingGoalApi.create(payload, token)
+          toast.success("Meta de ahorro creada exitosamente")
         }
-        const goal = await savingGoalApi.create(payload, session?.accessToken ?? "")
-        toast.success("Meta de ahorro creada exitosamente")
         onSuccess(goal)
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Error al crear la meta")
+        toast.error(err instanceof Error ? err.message : "Error al guardar la meta")
       }
     },
   })
@@ -129,7 +144,7 @@ export function SavingGoalForm({ onSuccess, onCancel }: SavingGoalFormProps) {
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creando…" : "Crear meta"}
+                {isSubmitting ? "Guardando…" : isEdit ? "Guardar cambios" : "Crear meta"}
               </Button>
             )}
           </form.Subscribe>

@@ -27,4 +27,10 @@ export const accountApi = {
       method: "DELETE",
       token,
     }),
+
+  recalculate: (id: string, token: string) =>
+    apiFetch<Account>(`/api/v1/accounts/${id}/recalculate`, {
+      method: "POST",
+      token,
+    }),
 }

@@ -23,7 +23,15 @@ class AuthService:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _build_token_response(self, session, user_id: str, email: str) -> TokenResponse:
+    def _build_token_response(
+        self,
+        session,
+        user_id: str,
+        email: str,
+        name: str = "",
+        currency: str = "COP",
+        plan: str = "free",
+    ) -> TokenResponse:
         return TokenResponse(
             access_token=session.access_token,
             refresh_token=session.refresh_token,
@@ -31,6 +39,9 @@ class AuthService:
             expires_in=session.expires_in,
             user_id=user_id,
             email=email,
+            name=name,
+            currency=currency,
+            plan=plan,
         )
 
     async def _sync_user(
@@ -67,7 +78,11 @@ class AuthService:
     async def sign_up(self, data: SignUpRequest) -> TokenResponse:
         try:
             response = await self.supabase.auth.sign_up(
-                {"email": data.email, "password": data.password}
+                {
+                    "email": data.email,
+                    "password": data.password,
+                    "options": {"data": {"name": data.name, "currency": data.currency}},
+                }
             )
         except AuthApiError as e:
             raise HTTPException(status_code=e.status or 400, detail=e.message)
@@ -88,17 +103,21 @@ class AuthService:
                 requires_confirmation=True,
             )
 
-        await self._sync_user(
+        local_user = await self._sync_user(
             supabase_user_id=str(supabase_user.id),
             email=str(supabase_user.email),
             name=data.name,
             currency=data.currency,
         )
+        await self.user_repository.db.commit()
 
         return self._build_token_response(
             session=response.session,
             user_id=str(supabase_user.id),
             email=str(supabase_user.email),
+            name=local_user.name,
+            currency=local_user.currency,
+            plan=local_user.plan,
         )
 
     async def sign_in(self, data: SignInRequest) -> TokenResponse:
@@ -115,17 +134,21 @@ class AuthService:
         supabase_user = response.user
         meta = supabase_user.user_metadata or {}
 
-        await self._sync_user(
+        local_user = await self._sync_user(
             supabase_user_id=str(supabase_user.id),
             email=str(supabase_user.email),
             name=meta.get("name", str(supabase_user.email).split("@")[0]),
             currency=meta.get("currency", "COP"),
         )
+        await self.user_repository.db.commit()
 
         return self._build_token_response(
             session=response.session,
             user_id=str(supabase_user.id),
             email=str(supabase_user.email),
+            name=local_user.name,
+            currency=local_user.currency,
+            plan=local_user.plan,
         )
 
     async def sign_in_with_id_token(self, data: IdTokenSignInRequest) -> TokenResponse:
@@ -155,17 +178,21 @@ class AuthService:
             or str(supabase_user.email).split("@")[0]
         )
 
-        await self._sync_user(
+        local_user = await self._sync_user(
             supabase_user_id=str(supabase_user.id),
             email=str(supabase_user.email),
             name=name,
             currency=data.currency,
         )
+        await self.user_repository.db.commit()
 
         return self._build_token_response(
             session=response.session,
             user_id=str(supabase_user.id),
             email=str(supabase_user.email),
+            name=local_user.name,
+            currency=local_user.currency,
+            plan=local_user.plan,
         )
 
     async def refresh_session(self, data: RefreshTokenRequest) -> TokenResponse:
@@ -181,6 +208,39 @@ class AuthService:
             session=response.session,
             user_id=str(response.user.id),
             email=str(response.user.email),
+        )
+
+    async def confirm_email(self, token_hash: str, type: str) -> TokenResponse:
+        """Verify an OTP token_hash from a confirmation email and return a session."""
+        try:
+            response = await self.supabase.auth.verify_otp(
+                {"token_hash": token_hash, "type": type}
+            )
+        except AuthApiError as e:
+            status_code = e.status or 400
+            raise HTTPException(status_code=status_code, detail=e.message)
+
+        if not response.session or not response.user:
+            raise HTTPException(status_code=400, detail="Confirmation failed")
+
+        supabase_user = response.user
+        meta = supabase_user.user_metadata or {}
+
+        local_user = await self._sync_user(
+            supabase_user_id=str(supabase_user.id),
+            email=str(supabase_user.email),
+            name=meta.get("name", str(supabase_user.email).split("@")[0]),
+            currency=meta.get("currency", "COP"),
+        )
+        await self.user_repository.db.commit()
+
+        return self._build_token_response(
+            session=response.session,
+            user_id=str(supabase_user.id),
+            email=str(supabase_user.email),
+            name=local_user.name,
+            currency=local_user.currency,
+            plan=local_user.plan,
         )
 
     async def sign_out(self, access_token: str, refresh_token: str) -> None:

@@ -12,14 +12,16 @@ Use these skills for detailed patterns on-demand:
 
 ### Generic Skills (Any Project)
 
-| Skill            | Description         | URL                                        |
-| ---------------- | ------------------- | ------------------------------------------ |
-| `fastapi-module` | modules for fastapi | [SKILL.md](skills/fastapi-module/SKILL.md) |
+| Skill               | Description                          | URL                                              |
+| ------------------- | ------------------------------------ | ------------------------------------------------ |
+| `fastapi-module`    | modules for fastapi                  | [SKILL.md](skills/fastapi-module/SKILL.md)       |
+| `sqlalchemy-async`  | SQLAlchemy 2.0 async patterns (API)  | [SKILL.md](skills/sqlalchemy-async/SKILL.md)     |
 
 ### Auto-invoke Skills
 
 When performing these actions, ALWAYS invoke the corresponding skill FIRST:
 
-| Action            | Skill            |
-| ----------------- | ---------------- |
-| Adding new module | `fastapi-module` |
+| Action                                      | Skill              |
+| ------------------------------------------- | ------------------ |
+| Adding new module                           | `fastapi-module`   |
+| Writing or modifying models.py / repository.py in apps/api | `sqlalchemy-async` |

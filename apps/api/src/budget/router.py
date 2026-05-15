@@ -6,9 +6,11 @@ from src.user.models import UserModel
 from src.budget.schemas import (
     BudgetCreate, BudgetUpdate, BudgetResponse,
     BudgetItemCreate, BudgetItemUpdate, BudgetItemResponse,
+    BudgetItemWithActual, BudgetSummaryResponse,
 )
 from src.budget.services import BudgetService, BudgetItemService
-from src.budget.dependencies import get_budget_service, get_budget_item_service
+from src.budget.dependencies import get_budget_service, get_budget_item_service, get_transaction_repository
+from src.transaction.repository import TransactionRepository
 
 router = APIRouter(prefix="/budgets", tags=["Budgets"])
 
@@ -65,7 +67,7 @@ async def delete_budget(
 
 # --- Budget Items ---
 
-@router.get("/{budget_id}/items", response_model=List[BudgetItemResponse])
+@router.get("/{budget_id}/items", response_model=List[BudgetItemWithActual])
 async def list_budget_items(
     budget_id: str,
     _: CurrentUser,
@@ -85,14 +87,15 @@ async def create_budget_item(
     return await service.create(data)
 
 
-@router.patch("/items/{id}", response_model=BudgetItemResponse)
+@router.patch("/items/{id}", response_model=BudgetItemWithActual)
 async def update_budget_item(
     id: str,
     data: BudgetItemUpdate,
-    _: CurrentUser,
+    current_user: CurrentUser,
     service: BudgetItemService = Depends(get_budget_item_service),
+    transaction_repo: TransactionRepository = Depends(get_transaction_repository),
 ):
-    return await service.update(id, data)
+    return await service.update(id, data, user_id=current_user.id, transaction_repo=transaction_repo)
 
 
 @router.delete("/items/{id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -102,3 +105,13 @@ async def delete_budget_item(
     service: BudgetItemService = Depends(get_budget_item_service),
 ):
     await service.delete(id)
+
+
+@router.get("/{id}/summary", response_model=BudgetSummaryResponse)
+async def get_budget_summary(
+    id: str,
+    _: CurrentUser,
+    budget_service: BudgetService = Depends(get_budget_service),
+    item_service: BudgetItemService = Depends(get_budget_item_service),
+):
+    return await budget_service.get_summary(id, item_service)

@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api"
-import type { Budget, BudgetCreate, BudgetUpdate, BudgetItem, BudgetItemCreate, BudgetItemUpdate } from "./types"
+import type { Budget, BudgetCreate, BudgetUpdate, BudgetItem, BudgetItemCreate, BudgetItemUpdate, BudgetSummary } from "./types"
 
 export const budgetApi = {
   list: (token: string) =>
@@ -27,6 +27,9 @@ export const budgetApi = {
       method: "DELETE",
       token,
     }),
+
+  summary: (id: string, token: string) =>
+    apiFetch<BudgetSummary>(`/api/v1/budgets/${id}/summary`, { token }),
 }
 
 export const budgetItemApi = {

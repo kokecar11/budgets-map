@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { useSession } from "next-auth/react"
-import { Plus, Trash2, Wallet, Building2, Banknote, Smartphone, Eye, EyeOff } from "lucide-react"
+import { toast } from "sonner"
+import { Plus, Trash2, Wallet, Building2, Banknote, Smartphone, Eye, EyeOff, RefreshCw, Pencil } from "lucide-react"
 
 import { Button } from "@workspace/ui/components/button"
 import { Badge } from "@workspace/ui/components/badge"
@@ -38,11 +39,31 @@ export function AccountList({ initialAccounts }: AccountListProps) {
   const { data: session } = useSession()
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts)
   const [openForm, setOpenForm] = useState(false)
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null)
   const [hiddenBalances, setHiddenBalances] = useState<Set<string>>(new Set())
+  const [syncing, setSyncing] = useState<Set<string>>(new Set())
 
   function handleCreated(account: Account) {
     setAccounts((prev) => [account, ...prev])
     setOpenForm(false)
+  }
+
+  function handleUpdated(account: Account) {
+    setAccounts((prev) => prev.map((a) => (a.id === account.id ? account : a)))
+    setEditingAccount(null)
+  }
+
+  async function handleRecalculate(id: string) {
+    setSyncing((prev) => new Set(prev).add(id))
+    try {
+      const updated = await accountApi.recalculate(id, session?.accessToken ?? "")
+      setAccounts((prev) => prev.map((a) => (a.id === updated.id ? updated : a)))
+      toast.success("Balance sincronizado")
+    } catch {
+      toast.error("Error al sincronizar el balance")
+    } finally {
+      setSyncing((prev) => { const next = new Set(prev); next.delete(id); return next })
+    }
   }
 
   async function handleDelete(id: string) {
@@ -161,6 +182,27 @@ export function AccountList({ initialAccounts }: AccountListProps) {
                   <Button
                     size="icon"
                     variant="ghost"
+                    className="size-8 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => setEditingAccount(account)}
+                    title="Editar cuenta"
+                  >
+                    <Pencil className="size-4" />
+                  </Button>
+
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="size-8 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => handleRecalculate(account.id)}
+                    disabled={syncing.has(account.id)}
+                    title="Sincronizar balance desde transacciones"
+                  >
+                    <RefreshCw className={`size-4 ${syncing.has(account.id) ? "animate-spin" : ""}`} />
+                  </Button>
+
+                  <Button
+                    size="icon"
+                    variant="ghost"
                     className="size-8 text-muted-foreground hover:text-destructive shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={() => handleDelete(account.id)}
                   >
@@ -183,6 +225,22 @@ export function AccountList({ initialAccounts }: AccountListProps) {
             onSuccess={handleCreated}
             onCancel={() => setOpenForm(false)}
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editingAccount)} onOpenChange={(open) => { if (!open) setEditingAccount(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar cuenta</DialogTitle>
+            <DialogDescription>Actualiza el nombre, tipo o estado de la cuenta.</DialogDescription>
+          </DialogHeader>
+          {editingAccount && (
+            <AccountForm
+              initialValues={editingAccount}
+              onSuccess={handleUpdated}
+              onCancel={() => setEditingAccount(null)}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

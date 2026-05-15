@@ -42,6 +42,7 @@ export function ReportsContent({
   token, isPro, initialYear, initialMonthlyStats, initialCategoryStats, categories,
 }: ReportsContentProps) {
   const [year, setYear] = useState(initialYear)
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null)
   const [monthlyStats, setMonthlyStats] = useState(initialMonthlyStats)
   const [categoryStats, setCategoryStats] = useState(initialCategoryStats)
   const [categoryChartType, setCategoryChartType] = useState<"bar" | "pie">("bar")
@@ -59,6 +60,7 @@ export function ReportsContent({
 
   function handleYearChange(y: number) {
     setYear(y)
+    setSelectedMonth(null)
     startTransition(async () => {
       const [ms, cs] = await Promise.allSettled([
         reportsApi.monthlyStats(token, y),
@@ -66,6 +68,14 @@ export function ReportsContent({
       ])
       if (ms.status === "fulfilled") setMonthlyStats(ms.value.stats)
       if (cs.status === "fulfilled") setCategoryStats(cs.value.stats)
+    })
+  }
+
+  function handleMonthChange(m: number | null) {
+    setSelectedMonth(m)
+    startTransition(async () => {
+      const cs = await reportsApi.categoryStats(token, year, m ?? undefined)
+      setCategoryStats(cs.stats)
     })
   }
 
@@ -256,24 +266,53 @@ export function ReportsContent({
           <div className="rounded-xl border bg-card p-6">
             <div className="flex items-center justify-between mb-1">
               <p className="font-semibold">Gastos por categoría</p>
-              <div className="flex items-center gap-1 border rounded-lg p-0.5">
-                <button
-                  type="button"
-                  onClick={() => setCategoryChartType("bar")}
-                  className={`p-1.5 rounded-md transition-colors ${categoryChartType === "bar" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  <BarChart2 className="size-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCategoryChartType("pie")}
-                  className={`p-1.5 rounded-md transition-colors ${categoryChartType === "pie" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  <PieIcon className="size-3.5" />
-                </button>
+              <div className="flex items-center gap-2">
+                {/* Month filter */}
+                <div className="flex items-center gap-1 border rounded-lg p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => handleMonthChange(null)}
+                    disabled={isPending}
+                    className={`h-7 px-2 rounded-md text-xs font-medium transition-colors ${selectedMonth === null ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    Año
+                  </button>
+                  {MONTH_NAMES.map((name, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => handleMonthChange(i + 1)}
+                      disabled={isPending}
+                      className={`h-7 px-2 rounded-md text-xs font-medium transition-colors ${selectedMonth === i + 1 ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+                {/* Chart type toggle */}
+                <div className="flex items-center gap-1 border rounded-lg p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setCategoryChartType("bar")}
+                    className={`p-1.5 rounded-md transition-colors ${categoryChartType === "bar" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <BarChart2 className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCategoryChartType("pie")}
+                    className={`p-1.5 rounded-md transition-colors ${categoryChartType === "pie" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <PieIcon className="size-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mb-4">Top gastos del año {year}</p>
+            <p className="text-xs text-muted-foreground mb-4">
+              {selectedMonth !== null
+                ? `Gastos de ${MONTH_NAMES[selectedMonth - 1]} ${year}`
+                : `Top gastos del año ${year}`}
+            </p>
 
             {categoryData.length === 0 ? (
               <div className="h-52 flex items-center justify-center">

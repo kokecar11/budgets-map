@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useSession } from "next-auth/react"
-import { Plus, Trash2, Target, TrendingUp, MoreVertical } from "lucide-react"
+import { Plus, Trash2, Target, TrendingUp, MoreVertical, Pencil, CheckCircle2, XCircle } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@workspace/ui/components/button"
@@ -46,10 +46,26 @@ export function SavingGoalList({ initialGoals }: SavingGoalListProps) {
   const { data: session } = useSession()
   const [goals, setGoals] = useState<SavingGoal[]>(initialGoals)
   const [openForm, setOpenForm] = useState(false)
+  const [editingGoal, setEditingGoal] = useState<SavingGoal | null>(null)
 
   function handleCreated(goal: SavingGoal) {
     setGoals((prev) => [goal, ...prev])
     setOpenForm(false)
+  }
+
+  function handleUpdated(goal: SavingGoal) {
+    setGoals((prev) => prev.map((g) => (g.id === goal.id ? goal : g)))
+    setEditingGoal(null)
+  }
+
+  async function handleSetStatus(id: string, status: SavingGoal["status"]) {
+    try {
+      const updated = await savingGoalApi.update(id, { status }, session?.accessToken ?? "")
+      setGoals((prev) => prev.map((g) => (g.id === updated.id ? updated : g)))
+      toast.success(status === "completed" ? "Meta completada" : "Meta cancelada")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al actualizar la meta")
+    }
   }
 
   async function handleDelete(id: string) {
@@ -171,6 +187,28 @@ export function SavingGoalList({ initialGoals }: SavingGoalListProps) {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setEditingGoal(goal)}>
+                        <Pencil className="size-4 mr-2" />
+                        Editar
+                      </DropdownMenuItem>
+                      {goal.status === "active" && (
+                        <>
+                          <DropdownMenuItem onClick={() => handleSetStatus(goal.id, "completed")}>
+                            <CheckCircle2 className="size-4 mr-2 text-green-500" />
+                            Marcar completada
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleSetStatus(goal.id, "cancelled")}>
+                            <XCircle className="size-4 mr-2 text-muted-foreground" />
+                            Cancelar meta
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      {goal.status !== "active" && (
+                        <DropdownMenuItem onClick={() => handleSetStatus(goal.id, "active")}>
+                          <Target className="size-4 mr-2 text-primary" />
+                          Reactivar meta
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive"
                         onClick={() => handleDelete(goal.id)}
@@ -197,6 +235,22 @@ export function SavingGoalList({ initialGoals }: SavingGoalListProps) {
             onSuccess={handleCreated}
             onCancel={() => setOpenForm(false)}
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editingGoal)} onOpenChange={(open) => { if (!open) setEditingGoal(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar meta de ahorro</DialogTitle>
+            <DialogDescription>Actualiza el nombre, monto o fecha límite de la meta.</DialogDescription>
+          </DialogHeader>
+          {editingGoal && (
+            <SavingGoalForm
+              initialValues={editingGoal}
+              onSuccess={handleUpdated}
+              onCancel={() => setEditingGoal(null)}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -58,3 +58,16 @@ export interface LoanPaymentCreate {
   date: string
   period: string
 }
+
+export interface LoanAmortization {
+  id: string
+  loan_id: string
+  period: string
+  payment_number: number
+  principal_payment: number
+  interest_payment: number
+  balance_after: number
+  is_paid: boolean
+  created_at?: string
+  updated_at?: string
+}

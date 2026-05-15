@@ -35,8 +35,18 @@ export interface BudgetItem {
   is_paid: boolean
   category_id?: string | null
   transaction_id?: string | null
+  actual_amount?: number | null
+  difference?: number | null
   created_at?: string
   updated_at?: string
+}
+
+export type AlertStatus = "ok" | "warning" | "over_budget"
+
+export interface BudgetSummary {
+  total_planned: number
+  total_actual: number
+  alert_status: AlertStatus
 }
 
 export interface BudgetItemCreate {
@@ -51,4 +61,5 @@ export interface BudgetItemUpdate {
   planned_amount?: number
   is_paid?: boolean
   category_id?: string
+  transaction_id?: string | null
 }

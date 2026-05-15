@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 from typing import Optional, List
 from src.budget.models import BudgetModel, BudgetItemModel
 from src.budget.schemas import BudgetCreate, BudgetUpdate, BudgetItemCreate, BudgetItemUpdate
@@ -54,13 +55,17 @@ class BudgetItemRepository:
 
     async def get_by_id(self, id: str) -> Optional[BudgetItemModel]:
         result = await self.db.execute(
-            select(BudgetItemModel).where(BudgetItemModel.id == id)
+            select(BudgetItemModel)
+            .options(joinedload(BudgetItemModel.transaction))
+            .where(BudgetItemModel.id == id)
         )
         return result.scalars().first()
 
     async def get_by_budget(self, budget_id: str) -> List[BudgetItemModel]:
         result = await self.db.execute(
-            select(BudgetItemModel).where(BudgetItemModel.budget_id == budget_id)
+            select(BudgetItemModel)
+            .options(joinedload(BudgetItemModel.transaction))
+            .where(BudgetItemModel.budget_id == budget_id)
         )
         return result.scalars().all()
 

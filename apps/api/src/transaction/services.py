@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from typing import Optional
 from src.transaction.repository import TransactionRepository
+from src.account.repository import AccountRepository
 from src.transaction.schemas import (
     TransactionCreate, TransactionUpdate, TransactionPageResponse,
     MonthlyStatsResponse, MonthlyStat, CategoryStatsResponse, CategoryStat,
@@ -12,8 +13,22 @@ from src.transaction.models import TransactionModel
 
 class TransactionService:
 
-    def __init__(self, repository: TransactionRepository):
+    def __init__(self, repository: TransactionRepository, account_repository: AccountRepository):
         self.repository = repository
+        self.account_repository = account_repository
+
+    def _balance_delta(
+        self,
+        tx_type: str,
+        amount: float,
+        transfer_to_account_id: str | None = None,
+    ) -> tuple[float, float]:
+        if tx_type == "income":
+            return (+amount, 0)
+        elif tx_type == "transfer":
+            return (-amount, +amount)
+        else:  # expense, saving
+            return (-amount, 0)
 
     async def get_all(self, skip: int = 0, limit: int = 100) -> list[TransactionModel]:
         return await self.repository.get_all(skip=skip, limit=limit)
@@ -61,15 +76,47 @@ class TransactionService:
         return obj
 
     async def create(self, data: TransactionCreate) -> TransactionModel:
-        return await self.repository.create(data)
+        obj = await self.repository.create(data)
+        src, dst = self._balance_delta(data.type, data.amount, data.transfer_to_account_id)
+        await self.account_repository.adjust_balance(data.account_id, src)
+        if data.type == "transfer" and data.transfer_to_account_id:
+            await self.account_repository.adjust_balance(data.transfer_to_account_id, dst)
+        return obj
 
     async def update(self, id: str, data: TransactionUpdate) -> TransactionModel:
         obj = await self.get_or_404(id)
-        return await self.repository.update(obj, data)
+        # Snapshot BEFORE mutation
+        old_type = obj.type
+        old_amount = obj.amount
+        old_transfer_to = obj.transfer_to_account_id
+        account_id = obj.account_id
+        # Apply update
+        obj = await self.repository.update(obj, data)
+        # Reverse old balance effect
+        old_src, old_dst = self._balance_delta(old_type, old_amount, old_transfer_to)
+        await self.account_repository.adjust_balance(account_id, -old_src)
+        if old_transfer_to:
+            await self.account_repository.adjust_balance(old_transfer_to, -old_dst)
+        # Apply new balance effect
+        new_src, new_dst = self._balance_delta(obj.type, obj.amount, obj.transfer_to_account_id)
+        await self.account_repository.adjust_balance(account_id, new_src)
+        if obj.transfer_to_account_id:
+            await self.account_repository.adjust_balance(obj.transfer_to_account_id, new_dst)
+        return obj
 
     async def delete(self, id: str) -> None:
         obj = await self.get_or_404(id)
+        # Snapshot BEFORE deletion
+        tx_type = obj.type
+        amount = obj.amount
+        account_id = obj.account_id
+        transfer_to = obj.transfer_to_account_id
         await self.repository.delete(obj)
+        # Reverse balance effect
+        src, dst = self._balance_delta(tx_type, amount, transfer_to)
+        await self.account_repository.adjust_balance(account_id, -src)
+        if transfer_to:
+            await self.account_repository.adjust_balance(transfer_to, -dst)
 
     async def count_recurring(self, user_id: str) -> int:
         return await self.repository.count_recurring(user_id)
