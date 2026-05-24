@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@workspace/ui/components/dialog"
 
+import { useTranslations } from "next-intl"
 import { CategoryForm } from "./category-form"
 import { categoryApi } from "./api"
 import type { Category } from "./types"
@@ -24,6 +25,7 @@ interface CategoryListProps {
 
 export function CategoryList({ initialCategories }: CategoryListProps) {
   const { data: session } = useSession()
+  const t = useTranslations("categories")
   const [categories, setCategories] = useState<Category[]>(initialCategories)
   const [openForm, setOpenForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
@@ -42,9 +44,9 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
     try {
       await categoryApi.delete(id, session?.accessToken ?? "")
       setCategories((prev) => prev.filter((c) => c.id !== id))
-      toast.success("Categoría eliminada")
+      toast.success(t("categoryDeleted"))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error al eliminar la categoría")
+      toast.error(err instanceof Error ? err.message : t("errorDeleting"))
     }
   }
 
@@ -63,28 +65,28 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
               <Tag className="size-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Categorías</h1>
-              <p className="text-sm text-muted-foreground">Organiza tus ingresos y gastos</p>
+              <h1 className="text-xl font-bold">{t("title")}</h1>
+              <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
             </div>
           </div>
           <Button onClick={() => setOpenForm(true)}>
             <Plus className="size-4" />
-            Nueva categoría
+            {t("newCategory")}
           </Button>
         </div>
 
         {/* Stats row */}
         <div className="grid grid-cols-3">
           <div className="px-6 py-5">
-            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">Total categorías</p>
+            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">{t("totalCategories")}</p>
             <p className="text-3xl font-bold">{categories.length}</p>
           </div>
           <div className="px-6 py-5 bg-green-500/5 border-x">
-            <p className="text-xs font-semibold tracking-widest text-green-600 dark:text-green-500 uppercase mb-2">Categorías de ingresos</p>
+            <p className="text-xs font-semibold tracking-widest text-green-600 dark:text-green-500 uppercase mb-2">{t("incomeCategories")}</p>
             <p className="text-3xl font-bold text-green-600 dark:text-green-500">{income.length}</p>
           </div>
           <div className="px-6 py-5 bg-red-500/5">
-            <p className="text-xs font-semibold tracking-widest text-red-600 dark:text-red-500 uppercase mb-2">Categorías de gastos</p>
+            <p className="text-xs font-semibold tracking-widest text-red-600 dark:text-red-500 uppercase mb-2">{t("expenseCategories")}</p>
             <p className="text-3xl font-bold text-red-600 dark:text-red-500">{expense.length}</p>
           </div>
         </div>
@@ -93,7 +95,7 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
       {categories.length === 0 ? (
         <div className="rounded-xl border bg-card px-6 py-16 text-center">
           <p className="text-muted-foreground text-sm">
-            No tienes categorías. Crea una para organizar tus transacciones.
+            {t("noCategories")}
           </p>
         </div>
       ) : (
@@ -106,8 +108,8 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
                   <ArrowUpCircle className="size-5 text-green-500" />
                 </div>
                 <div>
-                  <p className="font-semibold">Ingresos</p>
-                  <p className="text-xs text-muted-foreground">{income.length} categorías</p>
+                  <p className="font-semibold">{t("income")}</p>
+                  <p className="text-xs text-muted-foreground">{t("countCategories", { count: income.length })}</p>
                 </div>
               </div>
               <div className="divide-y">
@@ -126,8 +128,8 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
                   <ArrowDownCircle className="size-5 text-red-500" />
                 </div>
                 <div>
-                  <p className="font-semibold">Gastos</p>
-                  <p className="text-xs text-muted-foreground">{expense.length} categorías</p>
+                  <p className="font-semibold">{t("expense")}</p>
+                  <p className="text-xs text-muted-foreground">{t("countCategories", { count: expense.length })}</p>
                 </div>
               </div>
               <div className="divide-y">
@@ -143,8 +145,8 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
       <Dialog open={openForm} onOpenChange={setOpenForm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nueva categoría</DialogTitle>
-            <DialogDescription>Organiza tus transacciones asignándoles una categoría.</DialogDescription>
+            <DialogTitle>{t("dialogTitleNew")}</DialogTitle>
+            <DialogDescription>{t("dialogDescNew")}</DialogDescription>
           </DialogHeader>
           <CategoryForm
             onSuccess={handleCreated}
@@ -156,8 +158,8 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
       <Dialog open={!!editingCategory} onOpenChange={(open) => { if (!open) setEditingCategory(null) }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar categoría</DialogTitle>
-            <DialogDescription>Modifica los datos de la categoría.</DialogDescription>
+            <DialogTitle>{t("dialogTitleEdit")}</DialogTitle>
+            <DialogDescription>{t("dialogDescEdit")}</DialogDescription>
           </DialogHeader>
           {editingCategory && (
             <CategoryForm

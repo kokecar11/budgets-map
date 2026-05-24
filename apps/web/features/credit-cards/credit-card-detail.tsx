@@ -4,6 +4,10 @@ import { useState } from "react"
 import { useSession } from "next-auth/react"
 import { Plus, Trash2, CreditCard as CreditCardIcon, ArrowDownCircle, CalendarDays, Percent, TrendingUp, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
+import { useLocale, useTranslations } from "next-intl"
+import { LOCALE_TAG } from "@/lib/dates"
+import type { Locale } from "@/i18n/routing"
+import { useCurrency } from "@/hooks/use-currency"
 
 import { Button } from "@workspace/ui/components/button"
 import { Progress } from "@workspace/ui/components/progress"
@@ -22,12 +26,6 @@ import { creditCardTransactionApi } from "./api"
 import type { CreditCard, CreditCardTransaction, CreditCardPayment, CreditCardPeriod } from "./types"
 import type { Account } from "@/features/accounts/types"
 import type { Category } from "@/features/categories/types"
-
-const PAYMENT_LABELS: Record<string, string> = {
-  minimum: "Pago mínimo",
-  total: "Pago total",
-  partial: "Pago parcial",
-}
 
 const PAYMENT_BADGE: Record<string, string> = {
   minimum: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400",
@@ -53,6 +51,8 @@ export function CreditCardDetail({
   categories,
 }: CreditCardDetailProps) {
   const { data: session } = useSession()
+  const locale = useLocale() as Locale
+  const t = useTranslations("creditCards")
   const [charges, setCharges] = useState<CreditCardTransaction[]>(initialCharges)
   const [payments, setPayments] = useState<CreditCardPayment[]>(initialPayments)
 
@@ -99,14 +99,13 @@ export function CreditCardDetail({
       await creditCardTransactionApi.delete(id, session?.accessToken ?? "")
       setCharges((prev) => prev.filter((c) => c.id !== id))
       if (selectedCharge?.id === id) setSelectedCharge(null)
-      toast.success("Cargo eliminado")
+      toast.success(t("chargeDeleted"))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error al eliminar el cargo")
+      toast.error(err instanceof Error ? err.message : t("errorDeletingCharge"))
     }
   }
 
-  const fmt = (n: number) =>
-    n.toLocaleString("es-MX", { minimumFractionDigits: 2 })
+  const fmt = useCurrency()
 
   return (
     <div className="flex flex-col gap-8">
@@ -123,11 +122,11 @@ export function CreditCardDetail({
             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
                 <CalendarDays className="size-3" />
-                Corte día {card.cutoff_day} · Pago día {card.payment_day}
+                {t("cutoffDay2", { day: card.cutoff_day, payment: card.payment_day })}
               </span>
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Percent className="size-3" />
-                {card.interest_rate}% anual
+                {t("annualRate", { rate: card.interest_rate })}
               </span>
             </div>
           </div>
@@ -138,7 +137,7 @@ export function CreditCardDetail({
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground flex items-center gap-1">
               <TrendingUp className="size-3" />
-              Uso del crédito
+              {t("creditUsage")}
             </span>
             <span className={`font-semibold ${usageColor}`}>{usagePercent.toFixed(1)}%</span>
           </div>
@@ -148,15 +147,15 @@ export function CreditCardDetail({
         {/* Stats row */}
         <div className="grid grid-cols-3 divide-x rounded-lg border overflow-hidden">
           <div className="flex flex-col gap-0.5 px-4 py-3">
-            <p className="text-xs text-muted-foreground">Límite</p>
+            <p className="text-xs text-muted-foreground">{t("limit")}</p>
             <p className="text-base font-semibold">${fmt(card.credit_limit)}</p>
           </div>
           <div className="flex flex-col gap-0.5 px-4 py-3">
-            <p className="text-xs text-muted-foreground">Utilizado</p>
+            <p className="text-xs text-muted-foreground">{t("used2")}</p>
             <p className={`text-base font-semibold ${usageColor}`}>${fmt(balance)}</p>
           </div>
           <div className="flex flex-col gap-0.5 px-4 py-3">
-            <p className="text-xs text-muted-foreground">Disponible</p>
+            <p className="text-xs text-muted-foreground">{t("available2")}</p>
             <p className="text-base font-semibold text-green-600">${fmt(available)}</p>
           </div>
         </div>
@@ -167,7 +166,7 @@ export function CreditCardDetail({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CreditCardIcon className="size-4 text-red-500" />
-            <h2 className="text-base font-semibold">Cargos</h2>
+            <h2 className="text-base font-semibold">{t("charges")}</h2>
             {charges.length > 0 && (
               <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
                 {charges.length}
@@ -176,13 +175,13 @@ export function CreditCardDetail({
           </div>
           <Button size="sm" onClick={() => setOpenChargeForm(true)}>
             <Plus className="size-4" />
-            Nuevo cargo
+            {t("newCharge")}
           </Button>
         </div>
 
         {charges.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-10 border rounded-lg border-dashed">
-            No hay cargos registrados.
+            {t("noCharges")}
           </p>
         ) : (
           <div className="flex flex-col gap-1">
@@ -204,9 +203,9 @@ export function CreditCardDetail({
                   >
                     <p className="text-sm font-medium truncate">{charge.description}</p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(charge.date).toLocaleDateString("es-MX")}
+                      {new Date(charge.date).toLocaleDateString(LOCALE_TAG[locale])}
                       {cat ? ` · ${cat.name}` : ""}
-                      {charge.installments > 1 ? ` · ${charge.installments} cuotas` : ""}
+                      {charge.installments > 1 ? ` · ${t("installmentsLabel", { count: charge.installments })}` : ""}
                     </p>
                   </button>
 
@@ -237,7 +236,7 @@ export function CreditCardDetail({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ArrowDownCircle className="size-4 text-green-500" />
-            <h2 className="text-base font-semibold">Pagos</h2>
+            <h2 className="text-base font-semibold">{t("payments")}</h2>
             {payments.length > 0 && (
               <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
                 {payments.length}
@@ -246,13 +245,13 @@ export function CreditCardDetail({
           </div>
           <Button size="sm" onClick={() => setOpenPaymentForm(true)}>
             <Plus className="size-4" />
-            Registrar pago
+            {t("registerPayment")}
           </Button>
         </div>
 
         {payments.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-10 border rounded-lg border-dashed">
-            No hay pagos registrados.
+            {t("noPayments")}
           </p>
         ) : (
           <div className="flex flex-col gap-1">
@@ -267,13 +266,13 @@ export function CreditCardDetail({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium">{PAYMENT_LABELS[payment.type]}</p>
+                    <p className="text-sm font-medium">{t(`payment${payment.type.charAt(0).toUpperCase()}${payment.type.slice(1)}` as "paymentMinimum" | "paymentTotal" | "paymentPartial")}</p>
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${PAYMENT_BADGE[payment.type]}`}>
-                      {payment.type === "minimum" ? "mínimo" : payment.type === "total" ? "total" : "parcial"}
+                      {t(`paymentType${payment.type.charAt(0).toUpperCase()}${payment.type.slice(1)}` as "paymentTypeMinimum" | "paymentTypeTotal" | "paymentTypePartial")}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(payment.date).toLocaleDateString("es-MX")}
+                    {new Date(payment.date).toLocaleDateString(LOCALE_TAG[locale])}
                   </p>
                 </div>
                 <p className="text-sm font-semibold text-green-600 shrink-0">
@@ -292,8 +291,8 @@ export function CreditCardDetail({
       <Dialog open={openChargeForm} onOpenChange={(open) => { if (!open) setOpenChargeForm(false) }}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Nuevo cargo</DialogTitle>
-            <DialogDescription>Registra un cargo realizado con esta tarjeta.</DialogDescription>
+            <DialogTitle>{t("dialogTitleCharge")}</DialogTitle>
+            <DialogDescription>{t("dialogDescCharge")}</DialogDescription>
           </DialogHeader>
           <CreditCardChargeForm
             creditCardId={card.id}
@@ -308,8 +307,8 @@ export function CreditCardDetail({
       <Dialog open={openPaymentForm} onOpenChange={(open) => { if (!open) setOpenPaymentForm(false) }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Registrar pago</DialogTitle>
-            <DialogDescription>Registra un abono a tu tarjeta de crédito.</DialogDescription>
+            <DialogTitle>{t("dialogTitlePayment")}</DialogTitle>
+            <DialogDescription>{t("dialogDescPayment")}</DialogDescription>
           </DialogHeader>
           <CreditCardPaymentForm
             card={card}
@@ -331,7 +330,7 @@ export function CreditCardDetail({
               <DialogHeader>
                 <DialogTitle className="truncate">{selectedCharge.description}</DialogTitle>
                 <DialogDescription>
-                  {new Date(selectedCharge.date).toLocaleDateString("es-MX", {
+                  {new Date(selectedCharge.date).toLocaleDateString(LOCALE_TAG[locale], {
                     weekday: "long", year: "numeric", month: "long", day: "numeric",
                   })}
                 </DialogDescription>
@@ -341,18 +340,18 @@ export function CreditCardDetail({
                 {/* Resumen del cargo */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs text-muted-foreground mb-1">Monto del cargo</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t("chargeAmountDetail")}</p>
                     <p className="text-xl font-bold text-red-600">-${fmt(selectedCharge.amount)}</p>
                   </div>
                   {selectedCharge.installments > 1 && (
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs text-muted-foreground mb-1">Cuotas</p>
+                      <p className="text-xs text-muted-foreground mb-1">{t("installmentsDetail")}</p>
                       <p className="text-xl font-bold">{selectedCharge.installments}</p>
                     </div>
                   )}
                   {selectedCharge.interest_rate ? (
                     <div className="rounded-lg border p-3">
-                      <p className="text-xs text-muted-foreground mb-1">Tasa E.A.</p>
+                      <p className="text-xs text-muted-foreground mb-1">{t("interestRateDetail")}</p>
                       <p className="text-xl font-bold">{selectedCharge.interest_rate}%</p>
                     </div>
                   ) : null}
@@ -361,7 +360,7 @@ export function CreditCardDetail({
                     if (!cat) return null
                     return (
                       <div className="rounded-lg border p-3">
-                        <p className="text-xs text-muted-foreground mb-1">Categoría</p>
+                        <p className="text-xs text-muted-foreground mb-1">{t("categoryDetail")}</p>
                         <p className="text-sm font-semibold">
                           {cat.icon ? `${cat.icon} ` : ""}
                           {cat.name}
@@ -375,7 +374,7 @@ export function CreditCardDetail({
                 {selectedCharge.installments > 1 && (
                   <div className="flex flex-col gap-2">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Tabla de amortización
+                      {t("amortizationTableLabel")}
                     </p>
                     <AmortizationTable
                       principal={selectedCharge.amount}
@@ -393,7 +392,7 @@ export function CreditCardDetail({
                   onClick={() => handleDeleteCharge(selectedCharge.id)}
                 >
                   <Trash2 className="size-4 mr-2" />
-                  Eliminar cargo
+                  {t("deleteCharge")}
                 </Button>
               </div>
             </>
@@ -407,9 +406,9 @@ export function CreditCardDetail({
           {selectedPayment && (
             <>
               <DialogHeader>
-                <DialogTitle>{PAYMENT_LABELS[selectedPayment.type]}</DialogTitle>
+                <DialogTitle>{t(`payment${selectedPayment.type.charAt(0).toUpperCase()}${selectedPayment.type.slice(1)}` as "paymentMinimum" | "paymentTotal" | "paymentPartial")}</DialogTitle>
                 <DialogDescription>
-                  {new Date(selectedPayment.date).toLocaleDateString("es-MX", {
+                  {new Date(selectedPayment.date).toLocaleDateString(LOCALE_TAG[locale], {
                     weekday: "long", year: "numeric", month: "long", day: "numeric",
                   })}
                 </DialogDescription>
@@ -417,25 +416,25 @@ export function CreditCardDetail({
 
               <div className="flex flex-col gap-4">
                 <div className="rounded-lg border p-4">
-                  <p className="text-xs text-muted-foreground mb-1">Monto pagado</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t("amountPaidDetail")}</p>
                   <p className="text-3xl font-bold text-green-600">+${fmt(selectedPayment.amount)}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs text-muted-foreground mb-1">Tipo</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t("paymentTypeDetail")}</p>
                     <span className={`text-xs font-medium px-2 py-1 rounded-full ${PAYMENT_BADGE[selectedPayment.type]}`}>
-                      {PAYMENT_LABELS[selectedPayment.type]}
+                      {t(`payment${selectedPayment.type.charAt(0).toUpperCase()}${selectedPayment.type.slice(1)}` as "paymentMinimum" | "paymentTotal" | "paymentPartial")}
                     </span>
                   </div>
                   <div className="rounded-lg border p-3">
-                    <p className="text-xs text-muted-foreground mb-1">Tarjeta</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t("cardDetail")}</p>
                     <p className="text-sm font-semibold">{card.alias}</p>
                   </div>
                 </div>
 
                 <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
-                  Este pago fue registrado como transacción de gasto en tu cuenta de origen.
+                  {t("paymentNote")}
                 </div>
               </div>
             </>

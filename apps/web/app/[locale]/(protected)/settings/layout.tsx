@@ -1,28 +1,30 @@
 "use client"
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
 import { Settings } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { cn } from "@workspace/ui/lib/utils"
 import { PageHeader } from "@/components/page-header"
-
-const NAV_ITEMS = [
-  { label: "General",      href: "/settings" },
-  { label: "Cuenta",       href: "/settings/account" },
-  { label: "Facturación",  href: "/settings/billing" },
-  { label: "Privacidad",   href: "/settings/privacy" },
-]
+import { Link, usePathname } from "@/i18n/navigation"
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
+  const t = useTranslations("settings")
+  const tNav = useTranslations("nav")
   const pathname = usePathname()
-  const activeLabel = NAV_ITEMS.find((item) => item.href === pathname)?.label ?? "Configuración"
+
+  const NAV_ITEMS = [
+    { label: t("general"),  href: "/settings" },
+    { label: t("account"),  href: "/settings/account" },
+    { label: t("billing"),  href: "/settings/billing" },
+    { label: t("privacy"),  href: "/settings/privacy" },
+  ]
+
+  const activeLabel = NAV_ITEMS.find((item) => item.href === pathname)?.label ?? tNav("settings")
 
   return (
     <div className="p-6 flex flex-col gap-6 min-h-full">
-      <PageHeader icon={Settings} title="Configuración" subtitle={activeLabel} />
+      <PageHeader icon={Settings} title={tNav("settings")} subtitle={activeLabel} />
 
       <div className="flex gap-8 items-start">
-        {/* Left nav */}
         <nav className="w-44 shrink-0 flex flex-col gap-0.5 sticky top-6">
           {NAV_ITEMS.map((item) => {
             const isActive = pathname === item.href
@@ -43,7 +45,6 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
           })}
         </nav>
 
-        {/* Content */}
         <div className="flex-1 flex justify-center">
           <div className="w-full max-w-2xl flex flex-col gap-6">
             {children}

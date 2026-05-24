@@ -1,27 +1,45 @@
 import type { Transaction } from "./types"
 import type { Account } from "@/features/accounts/types"
 import type { Category } from "@/features/categories/types"
+import type { Locale } from "@/i18n/routing"
+import { LOCALE_TAG } from "@/lib/dates"
 
-const TYPE_LABELS: Record<string, string> = {
-  income: "Ingreso",
-  expense: "Gasto",
-  transfer: "Transferencia",
-  saving: "Ahorro",
+export interface ExportCsvLabels {
+  date: string
+  type: string
+  description: string
+  account: string
+  category: string
+  amount: string
+  typeIncome: string
+  typeExpense: string
+  typeTransfer: string
+  typeSaving: string
 }
 
 export function exportTransactionsCSV(
   transactions: Transaction[],
   accounts: Account[],
   categories: Category[],
+  locale: Locale,
+  labels: ExportCsvLabels,
 ) {
+  const localeTag = LOCALE_TAG[locale]
   const accountMap = Object.fromEntries(accounts.map((a) => [a.id, a.name]))
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]))
 
-  const headers = ["Fecha", "Tipo", "Descripción", "Cuenta", "Categoría", "Monto"]
+  const typeLabels: Record<string, string> = {
+    income: labels.typeIncome,
+    expense: labels.typeExpense,
+    transfer: labels.typeTransfer,
+    saving: labels.typeSaving,
+  }
+
+  const headers = [labels.date, labels.type, labels.description, labels.account, labels.category, labels.amount]
 
   const rows = transactions.map((tx) => [
-    new Date(tx.date).toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }),
-    TYPE_LABELS[tx.type] ?? tx.type,
+    new Date(tx.date).toLocaleDateString(localeTag, { day: "2-digit", month: "2-digit", year: "numeric" }),
+    typeLabels[tx.type] ?? tx.type,
     tx.description ?? "",
     accountMap[tx.account_id] ?? tx.account_id,
     tx.category_id ? (categoryMap[tx.category_id] ?? tx.category_id) : "",
@@ -32,11 +50,11 @@ export function exportTransactionsCSV(
     .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
     .join("\n")
 
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" })
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" })
   const url = URL.createObjectURL(blob)
   const link = document.createElement("a")
   link.href = url
-  link.download = `transacciones_${new Date().toISOString().slice(0, 10)}.csv`
+  link.download = `transactions_${new Date().toISOString().slice(0, 10)}.csv`
   link.click()
   URL.revokeObjectURL(url)
 }

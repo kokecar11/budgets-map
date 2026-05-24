@@ -17,6 +17,7 @@ import {
 import { SearchSelect } from "@workspace/ui/components/search-select"
 
 import { DatePicker } from "@workspace/ui/components/date-picker"
+import { useTranslations } from "next-intl"
 import { creditCardPeriodApi, creditCardPaymentApi } from "./api"
 import { transactionApi } from "@/features/transactions/api"
 import type { CreditCard, CreditCardPayment, CreditCardPeriod } from "./types"
@@ -55,6 +56,8 @@ function computePeriodDates(card: CreditCard, paymentDate: Date) {
 
 export function CreditCardPaymentForm({ card, periods, accounts, onSuccess, onCancel }: CreditCardPaymentFormProps) {
   const { data: session } = useSession()
+  const t = useTranslations("creditCards")
+  const tCommon = useTranslations("common")
 
   const form = useForm({
     defaultValues: {
@@ -119,10 +122,10 @@ export function CreditCardPaymentForm({ card, periods, accounts, onSuccess, onCa
           token
         )
 
-        toast.success("Pago registrado exitosamente")
+        toast.success(t("paymentRegistered"))
         onSuccess(payment)
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Error al registrar el pago")
+        toast.error(err instanceof Error ? err.message : t("errorRegisteringPayment"))
       }
     },
   })
@@ -137,17 +140,17 @@ export function CreditCardPaymentForm({ card, periods, accounts, onSuccess, onCa
       <FieldGroup>
         <form.Field
           name="account_id"
-          validators={{ onSubmit: ({ value }) => !value ? "Selecciona una cuenta" : undefined }}
+          validators={{ onSubmit: ({ value }) => !value ? t("accountRequired") : undefined }}
         >
           {(field) => (
             <Field>
-              <FieldLabel>Cuenta de origen</FieldLabel>
+              <FieldLabel>{t("sourceAccount")}</FieldLabel>
               <SearchSelect
                 value={field.state.value}
                 onValueChange={(v) => field.handleChange(v)}
                 options={accounts.map((a) => ({ value: a.id, label: a.name }))}
-                placeholder="Seleccionar cuenta"
-                searchPlaceholder="Buscar cuenta..."
+                placeholder={t("selectAccount")}
+                searchPlaceholder={t("searchAccount")}
               />
               {field.state.meta.errors.length > 0 && (
                 <p className="text-destructive text-sm">{field.state.meta.errors[0]}</p>
@@ -159,18 +162,18 @@ export function CreditCardPaymentForm({ card, periods, accounts, onSuccess, onCa
         <form.Field name="type">
           {(field) => (
             <Field>
-              <FieldLabel>Tipo de pago</FieldLabel>
+              <FieldLabel>{t("paymentType")}</FieldLabel>
               <Select
                 value={field.state.value}
                 onValueChange={(v) => field.handleChange(v as "minimum" | "total" | "partial")}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar tipo de pago" />
+                  <SelectValue placeholder={t("selectPaymentType")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="partial">Pago parcial</SelectItem>
-                  <SelectItem value="minimum">Pago mínimo</SelectItem>
-                  <SelectItem value="total">Pago total</SelectItem>
+                  <SelectItem value="partial">{t("paymentPartial")}</SelectItem>
+                  <SelectItem value="minimum">{t("paymentMinimum")}</SelectItem>
+                  <SelectItem value="total">{t("paymentTotal")}</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
@@ -179,11 +182,11 @@ export function CreditCardPaymentForm({ card, periods, accounts, onSuccess, onCa
 
         <form.Field
           name="amount"
-          validators={{ onSubmit: ({ value }) => !value || Number(value) <= 0 ? "El monto debe ser mayor a 0" : undefined }}
+          validators={{ onSubmit: ({ value }) => !value || Number(value) <= 0 ? t("amountRequired") : undefined }}
         >
           {(field) => (
             <Field>
-              <FieldLabel htmlFor="amount">Monto</FieldLabel>
+              <FieldLabel htmlFor="amount">{t("amountField")}</FieldLabel>
               <Input
                 id="amount"
                 type="number"
@@ -203,7 +206,7 @@ export function CreditCardPaymentForm({ card, periods, accounts, onSuccess, onCa
         <form.Field name="date">
           {(field) => (
             <Field>
-              <FieldLabel>Fecha</FieldLabel>
+              <FieldLabel>{t("dateField")}</FieldLabel>
               <DatePicker
                 value={field.state.value ?? ""}
                 onChange={field.handleChange}
@@ -214,12 +217,12 @@ export function CreditCardPaymentForm({ card, periods, accounts, onSuccess, onCa
 
         <div className="flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
+            {tCommon("cancel")}
           </Button>
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Registrando…" : "Registrar pago"}
+                {isSubmitting ? t("registeringPayment") : t("registerPaymentBtn")}
               </Button>
             )}
           </form.Subscribe>

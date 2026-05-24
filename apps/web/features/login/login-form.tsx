@@ -16,12 +16,14 @@ import {
   FieldSeparator,
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
+import { useTranslations } from "next-intl"
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
   const router = useRouter()
+  const t = useTranslations("auth")
   const [serverError, setServerError] = useState<string | null>(null)
 
   const form = useForm({
@@ -37,7 +39,7 @@ export function LoginForm({
         redirect: false,
       })
       if (result?.error) {
-        setServerError("Invalid email or password")
+        setServerError(t("invalidCredentials"))
       } else {
         router.push("/dashboard")
       }
@@ -57,9 +59,9 @@ export function LoginForm({
           >
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
-                <h1 className="text-2xl font-bold">Welcome back</h1>
+                <h1 className="text-2xl font-bold">{t("welcomeBack")}</h1>
                 <p className="text-balance text-muted-foreground">
-                  Login to your Acme Inc account
+                  {t("loginSubtitle")}
                 </p>
               </div>
 
@@ -67,19 +69,19 @@ export function LoginForm({
                 name="email"
                 validators={{
                   onSubmit: ({ value }) => {
-                    if (!value) return "Email is required"
+                    if (!value) return t("emailRequired")
                     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
-                      return "Enter a valid email"
+                      return t("emailInvalid")
                   },
                 }}
               >
                 {(field) => (
                   <Field>
-                    <FieldLabel htmlFor="email">Email</FieldLabel>
+                    <FieldLabel htmlFor="email">{t("email")}</FieldLabel>
                     <Input
                       id="email"
                       type="email"
-                      placeholder="m@example.com"
+                      placeholder={t("emailPlaceholder")}
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -97,19 +99,19 @@ export function LoginForm({
                 name="password"
                 validators={{
                   onSubmit: ({ value }) => {
-                    if (!value) return "Password is required"
+                    if (!value) return t("passwordRequired")
                   },
                 }}
               >
                 {(field) => (
                   <Field>
                     <div className="flex items-center">
-                      <FieldLabel htmlFor="password">Password</FieldLabel>
+                      <FieldLabel htmlFor="password">{t("password")}</FieldLabel>
                       <a
                         href="#"
                         className="ml-auto text-sm underline-offset-2 hover:underline"
                       >
-                        Forgot your password?
+                        {t("forgotPassword")}
                       </a>
                     </div>
                     <Input
@@ -138,13 +140,13 @@ export function LoginForm({
                 {(isSubmitting) => (
                   <Field>
                     <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? "Signing in…" : "Login"}
+                      {isSubmitting ? t("signingIn") : t("login")}
                     </Button>
                   </Field>
                 )}
               </form.Subscribe>
               <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-                Or continue with
+                {t("orContinueWith")}
               </FieldSeparator>
               <Field className="grid grid-cols-3 gap-4">
                 <Button variant="outline" type="button">
@@ -154,7 +156,7 @@ export function LoginForm({
                       fill="currentColor"
                     />
                   </svg>
-                  <span className="sr-only">Login with Apple</span>
+                  <span className="sr-only">{t("loginWithApple")}</span>
                 </Button>
                 <Button variant="outline" type="button">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -163,7 +165,7 @@ export function LoginForm({
                       fill="currentColor"
                     />
                   </svg>
-                  <span className="sr-only">Login with Google</span>
+                  <span className="sr-only">{t("loginWithGoogle")}</span>
                 </Button>
                 <Button variant="outline" type="button">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -172,13 +174,13 @@ export function LoginForm({
                       fill="currentColor"
                     />
                   </svg>
-                  <span className="sr-only">Login with Meta</span>
+                  <span className="sr-only">{t("loginWithMeta")}</span>
                 </Button>
               </Field>
               <FieldDescription className="text-center">
-                ¿No tienes cuenta?{" "}
+                {t("noAccount")}{" "}
                 <a href="/signup" className="underline underline-offset-2 hover:text-foreground">
-                  Regístrate gratis
+                  {t("signUpFree")}
                 </a>
               </FieldDescription>
             </FieldGroup>
@@ -193,8 +195,8 @@ export function LoginForm({
         </CardContent>
       </Card>
       <FieldDescription className="px-6 text-center">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
-        and <a href="#">Privacy Policy</a>.
+        {t("termsNotice")} <a href="#">{t("termsOfService")}</a>{" "}
+        {t("and")} <a href="#">{t("privacyPolicy")}</a>.
       </FieldDescription>
     </div>
   )

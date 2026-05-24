@@ -3,6 +3,8 @@ import autoTable from "jspdf-autotable"
 import type { Transaction } from "./types"
 import type { Account } from "@/features/accounts/types"
 import type { Category } from "@/features/categories/types"
+import type { Locale } from "@/i18n/routing"
+import { LOCALE_TAG } from "@/lib/dates"
 
 // Brand colors
 const NAVY   = [14, 23, 42]   as [number, number, number]  // #0e172a
@@ -13,13 +15,37 @@ const GRAY   = [107, 114, 128] as [number, number, number]
 const LIGHT  = [248, 250, 252] as [number, number, number]
 const BORDER = [226, 232, 240] as [number, number, number]
 
-const TYPE_LABELS: Record<string, string> = {
-  income: "Ingreso", expense: "Gasto",
-  transfer: "Transferencia", saving: "Ahorro",
+export interface ExportPdfLabels {
+  // Column headers (shared with CSV)
+  date: string
+  type: string
+  description: string
+  account: string
+  category: string
+  amount: string
+  // Type labels
+  typeIncome: string
+  typeExpense: string
+  typeTransfer: string
+  typeSaving: string
+  // PDF-specific
+  reportTitle: string
+  generatedOn: string
+  numTransactions: string
+  totalIncome: string
+  totalExpenses: string
+  netBalance: string
+  expensesByCategory: string
+  transactionDetail: string
+  confidential: string
+  page: (page: number, total: number) => string
+  pctOfExpenses: string
+  noData: string
+  noCategory: string
 }
 
-function fmt(n: number) {
-  return `$ ${n.toLocaleString("es-MX", { minimumFractionDigits: 0 })}`
+function fmt(n: number, localeTag: string) {
+  return `$ ${n.toLocaleString(localeTag, { minimumFractionDigits: 0 })}`
 }
 
 function pct(part: number, total: number) {
@@ -33,11 +59,21 @@ export function exportTransactionsPDF(
   categories: Category[],
   userName: string,
   userEmail: string,
+  locale: Locale,
+  labels: ExportPdfLabels,
 ) {
+  const localeTag = LOCALE_TAG[locale]
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
   const W = doc.internal.pageSize.getWidth()   // 210
   const now = new Date()
-  const generatedAt = now.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })
+  const generatedAt = now.toLocaleDateString(localeTag, { day: "numeric", month: "long", year: "numeric" })
+
+  const typeLabels: Record<string, string> = {
+    income: labels.typeIncome,
+    expense: labels.typeExpense,
+    transfer: labels.typeTransfer,
+    saving: labels.typeSaving,
+  }
 
   const accountMap  = Object.fromEntries(accounts.map((a) => [a.id, a.name]))
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]))
@@ -54,7 +90,7 @@ export function exportTransactionsPDF(
     catMap[tx.category_id] = (catMap[tx.category_id] ?? 0) + tx.amount
   }
   const categoryRows = Object.entries(catMap)
-    .map(([id, amount]) => [categoryMap[id] ?? "Sin categoría", fmt(amount), pct(amount, totalExpense)])
+    .map(([id, amount]) => [categoryMap[id] ?? labels.noCategory, fmt(amount, localeTag), pct(amount, totalExpense)])
     .sort((a, b) => {
       const aVal = parseFloat((a[1] ?? "").replace(/[^0-9.]/g, ""))
       const bVal = parseFloat((b[1] ?? "").replace(/[^0-9.]/g, ""))
@@ -75,15 +111,15 @@ export function exportTransactionsPDF(
   doc.setFont("helvetica", "normal")
   doc.setFontSize(9)
   doc.setTextColor(180, 195, 220)
-  doc.text("Reporte Financiero de Transacciones", 14, 23)
+  doc.text(labels.reportTitle, 14, 23)
 
   // User info — right side
   doc.setFontSize(8)
   doc.setTextColor(...WHITE)
   doc.text(userName,    W - 14, 13, { align: "right" })
   doc.text(userEmail,   W - 14, 19, { align: "right" })
-  doc.text(`Generado el ${generatedAt}`, W - 14, 25, { align: "right" })
-  doc.text(`${transactions.length} transacciones`, W - 14, 31, { align: "right" })
+  doc.text(`${labels.generatedOn} ${generatedAt}`, W - 14, 25, { align: "right" })
+  doc.text(labels.numTransactions, W - 14, 31, { align: "right" })
 
   // ══════════════════════════════════════════════════════
   // SUMMARY CARDS  (3 boxes side by side)
@@ -95,9 +131,9 @@ export function exportTransactionsPDF(
   const startX = 14
 
   const cards = [
-    { label: "Total Ingresos", value: fmt(totalIncome),  color: GREEN },
-    { label: "Total Gastos",   value: fmt(totalExpense), color: RED   },
-    { label: "Balance Neto",   value: fmt(Math.abs(netBalance)),
+    { label: labels.totalIncome,   value: fmt(totalIncome, localeTag),           color: GREEN },
+    { label: labels.totalExpenses, value: fmt(totalExpense, localeTag),           color: RED   },
+    { label: labels.netBalance,    value: fmt(Math.abs(netBalance), localeTag),
       color: netBalance >= 0 ? GREEN : RED },
   ] as const
 
@@ -126,13 +162,13 @@ export function exportTransactionsPDF(
   doc.setFont("helvetica", "bold")
   doc.setFontSize(10)
   doc.setTextColor(...NAVY)
-  doc.text("Gastos por categoría", 14, y)
+  doc.text(labels.expensesByCategory, 14, y)
   y += 4
 
   autoTable(doc, {
     startY: y,
-    head: [["Categoría", "Total", "% del gasto"]],
-    body: categoryRows.length > 0 ? categoryRows : [["Sin datos", "", ""]],
+    head: [[labels.category, labels.amount, labels.pctOfExpenses]],
+    body: categoryRows.length > 0 ? categoryRows : [[labels.noData, "", ""]],
     theme: "plain",
     styles: { fontSize: 8, cellPadding: 3, textColor: [30, 41, 59] },
     headStyles: {
@@ -159,23 +195,23 @@ export function exportTransactionsPDF(
   doc.setFont("helvetica", "bold")
   doc.setFontSize(10)
   doc.setTextColor(...NAVY)
-  doc.text("Detalle de transacciones", 14, y)
+  doc.text(labels.transactionDetail, 14, y)
   y += 4
 
   const txRows = transactions
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .map((tx) => [
-      new Date(tx.date).toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "2-digit" }),
-      TYPE_LABELS[tx.type] ?? tx.type,
+      new Date(tx.date).toLocaleDateString(localeTag, { day: "2-digit", month: "2-digit", year: "2-digit" }),
+      typeLabels[tx.type] ?? tx.type,
       tx.description ?? "—",
       accountMap[tx.account_id] ?? "—",
       tx.category_id ? (categoryMap[tx.category_id] ?? "—") : "—",
-      (tx.type === "expense" ? "-" : "+") + fmt(tx.amount),
+      (tx.type === "expense" ? "-" : "+") + fmt(tx.amount, localeTag),
     ])
 
   autoTable(doc, {
     startY: y,
-    head: [["Fecha", "Tipo", "Descripción", "Cuenta", "Categoría", "Monto"]],
+    head: [[labels.date, labels.type, labels.description, labels.account, labels.category, labels.amount]],
     body: txRows,
     theme: "plain",
     styles: { fontSize: 7.5, cellPadding: 2.5, textColor: [30, 41, 59] },
@@ -196,7 +232,6 @@ export function exportTransactionsPDF(
     },
     margin: { left: 14, right: 14 },
     didParseCell(data) {
-      // Color amount column
       if (data.column.index === 5 && data.section === "body") {
         const val = String(data.cell.raw ?? "")
         data.cell.styles.textColor = val.startsWith("-") ? RED : GREEN
@@ -217,9 +252,9 @@ export function exportTransactionsPDF(
     doc.setFont("helvetica", "normal")
     doc.setFontSize(7)
     doc.setTextColor(180, 195, 220)
-    doc.text("Budgets Map — Reporte financiero confidencial", 14, H - 3.5)
-    doc.text(`Página ${p} / ${totalPages}`, W - 14, H - 3.5, { align: "right" })
+    doc.text(labels.confidential, 14, H - 3.5)
+    doc.text(labels.page(p, totalPages), W - 14, H - 3.5, { align: "right" })
   }
 
-  doc.save(`reporte_transacciones_${now.toISOString().slice(0, 10)}.pdf`)
+  doc.save(`transactions_${now.toISOString().slice(0, 10)}.pdf`)
 }

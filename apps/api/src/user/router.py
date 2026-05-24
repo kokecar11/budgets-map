@@ -47,10 +47,10 @@ async def create_user(
 async def update_user(
     id: str,
     data: UserUpdate,
-    _: CurrentUser,
+    current_user: CurrentUser,
     service: UserService = Depends(get_user_service),
 ):
-    return await service.update(id, data)
+    return await service.update(current_user.id, data)
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)

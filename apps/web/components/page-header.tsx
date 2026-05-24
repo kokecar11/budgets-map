@@ -1,4 +1,9 @@
+"use client"
+
 import type { LucideIcon } from "lucide-react"
+import { useLocale } from "next-intl"
+import type { Locale } from "@/i18n/routing"
+import { fmtCurrentMonthYear } from "@/lib/dates"
 
 interface PageHeaderProps {
   icon: LucideIcon
@@ -7,7 +12,8 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ icon: Icon, title, subtitle }: PageHeaderProps) {
-  const date = new Date().toLocaleDateString("es-MX", { month: "long", year: "numeric" })
+  const locale = useLocale() as Locale
+  const date = fmtCurrentMonthYear(locale)
 
   return (
     <div className="rounded-xl border bg-card overflow-hidden">

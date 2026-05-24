@@ -6,6 +6,10 @@ import {
   ArrowUpCircle, ArrowDownCircle, ArrowRightLeft, PiggyBank, ReceiptText,
   Filter, X, Download, Loader2, ChevronLeft, ChevronRight,
 } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
+import type { ExportCsvLabels } from "./export-csv"
+import type { ExportPdfLabels } from "./export-pdf"
+import { LOCALE_TAG } from "@/lib/dates"
 import { toast } from "sonner"
 
 import { Button } from "@workspace/ui/components/button"
@@ -29,6 +33,8 @@ import type { Account } from "@/features/accounts/types"
 import type { Category } from "@/features/categories/types"
 import type { SavingGoal } from "@/features/savings/types"
 import type { Loan } from "@/features/loans/types"
+import type { Locale } from "@/i18n/routing"
+import { useCurrency } from "@/hooks/use-currency"
 
 const TYPE_ICONS = {
   income: ArrowUpCircle,
@@ -58,12 +64,7 @@ const TYPE_AMOUNT_COLORS = {
   saving: "text-purple-500",
 }
 
-const TYPE_LABELS = {
-  income: "Ingreso",
-  expense: "Gasto",
-  transfer: "Transferencia",
-  saving: "Ahorro",
-}
+// TYPE_LABELS are handled via useTranslations in the component
 
 interface TransactionListProps {
   token: string
@@ -79,6 +80,15 @@ interface TransactionListProps {
 }
 
 export function TransactionList({ token, isPro, userName, userEmail, initialTransactions, initialNextToken, accounts, categories, savingGoals, loans }: TransactionListProps) {
+  const locale = useLocale() as Locale
+  const t = useTranslations("transactions")
+  const tExport = useTranslations("public.export")
+  const TYPE_LABELS = {
+    income: t("typeIncome"),
+    expense: t("typeExpense"),
+    transfer: t("typeTransfer"),
+    saving: t("typeSaving"),
+  }
   const [pageSize, setPageSize] = useState(20)
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions)
   const [nextToken, setNextToken] = useState<string | null>(initialNextToken)
@@ -111,9 +121,9 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
     try {
       await transactionApi.delete(id, token)
       setTransactions((prev) => prev.filter((t) => t.id !== id))
-      toast.success("Transacción eliminada")
+      toast.success(t("deleted"))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error al eliminar la transacción")
+      toast.error(err instanceof Error ? err.message : t("errorDeleting"))
     }
   }
 
@@ -130,7 +140,7 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
       setTransactions((prev) => [...prev, ...page.items])
       setNextToken(page.next_token)
     } catch {
-      toast.error("Error al cargar más transacciones")
+      toast.error(t("errorLoading"))
     } finally {
       setLoadingMore(false)
     }
@@ -147,7 +157,7 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
 
   const hasActiveFilters = dateFrom || dateTo || filterAccountId !== "all" || filterCategoryId !== "all" || filterType !== "all"
 
-  const fmt = (n: number) => n.toLocaleString("es-MX", { minimumFractionDigits: 0 })
+  const fmt = useCurrency()
 
   const totalIncome = transactions
     .filter((t) => t.type === "income")
@@ -195,9 +205,9 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
 
     for (const [key, txs] of map.entries()) {
       let label: string
-      if (key === todayKey) label = "Hoy"
-      else if (key === yesterdayKey) label = "Ayer"
-      else label = new Date(key + "T12:00:00").toLocaleDateString("es-MX", {
+      if (key === todayKey) label = t("today")
+      else if (key === yesterdayKey) label = t("yesterday")
+      else label = new Date(key + "T12:00:00").toLocaleDateString(LOCALE_TAG[locale], {
         weekday: "long", day: "numeric", month: "long", year: "numeric",
       })
       groups.push({ label, transactions: txs })
@@ -218,8 +228,8 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
               <ReceiptText className="size-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Transacciones</h1>
-              <p className="text-sm text-muted-foreground">Registro de todos tus movimientos</p>
+              <h1 className="text-xl font-bold">{t("title")}</h1>
+              <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -228,7 +238,21 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => exportTransactionsCSV(filteredSorted, accounts, categories)}
+                  onClick={() => {
+                    const csvLabels: ExportCsvLabels = {
+                      date: tExport("date"),
+                      type: tExport("type"),
+                      description: tExport("description"),
+                      account: tExport("account"),
+                      category: tExport("category"),
+                      amount: tExport("amount"),
+                      typeIncome: tExport("typeIncome"),
+                      typeExpense: tExport("typeExpense"),
+                      typeTransfer: tExport("typeTransfer"),
+                      typeSaving: tExport("typeSaving"),
+                    }
+                    exportTransactionsCSV(filteredSorted, accounts, categories, locale, csvLabels)
+                  }}
                 >
                   <Download className="size-4" />
                   CSV
@@ -236,7 +260,34 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => exportTransactionsPDF(filteredSorted, accounts, categories, userName, userEmail)}
+                  onClick={() => {
+                    const pdfLabels: ExportPdfLabels = {
+                      date: tExport("date"),
+                      type: tExport("type"),
+                      description: tExport("description"),
+                      account: tExport("account"),
+                      category: tExport("category"),
+                      amount: tExport("amount"),
+                      typeIncome: tExport("typeIncome"),
+                      typeExpense: tExport("typeExpense"),
+                      typeTransfer: tExport("typeTransfer"),
+                      typeSaving: tExport("typeSaving"),
+                      reportTitle: tExport("reportTitle"),
+                      generatedOn: tExport("generatedOn"),
+                      numTransactions: tExport("numTransactions", { count: filteredSorted.length }),
+                      totalIncome: tExport("totalIncome"),
+                      totalExpenses: tExport("totalExpenses"),
+                      netBalance: tExport("netBalance"),
+                      expensesByCategory: tExport("expensesByCategory"),
+                      transactionDetail: tExport("transactionDetail"),
+                      confidential: tExport("confidential"),
+                      page: (p, total) => tExport("page", { page: p, total }),
+                      pctOfExpenses: tExport("pctOfExpenses"),
+                      noData: tExport("noData"),
+                      noCategory: tExport("noCategory"),
+                    }
+                    exportTransactionsPDF(filteredSorted, accounts, categories, userName, userEmail, locale, pdfLabels)
+                  }}
                 >
                   <Download className="size-4" />
                   PDF
@@ -245,7 +296,7 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
             )}
             <Button onClick={() => setOpenForm(true)}>
               <Plus className="size-4" />
-              Nueva transacción
+              {t("newTransaction")}
             </Button>
           </div>
         </div>
@@ -253,15 +304,15 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
         {/* Stats row */}
         <div className="grid grid-cols-3">
           <div className="px-6 py-5 bg-green-500/5">
-            <p className="text-xs font-semibold tracking-widest text-green-600 dark:text-green-500 uppercase mb-2">Total ingresos</p>
+            <p className="text-xs font-semibold tracking-widest text-green-600 dark:text-green-500 uppercase mb-2">{t("totalIncome")}</p>
             <p className="text-3xl font-bold text-green-600 dark:text-green-500">$ {fmt(totalIncome)}</p>
           </div>
           <div className="px-6 py-5 bg-red-500/5 border-x">
-            <p className="text-xs font-semibold tracking-widest text-red-600 dark:text-red-500 uppercase mb-2">Total gastos</p>
+            <p className="text-xs font-semibold tracking-widest text-red-600 dark:text-red-500 uppercase mb-2">{t("totalExpenses")}</p>
             <p className="text-3xl font-bold text-red-600 dark:text-red-500">$ {fmt(totalExpense)}</p>
           </div>
           <div className="px-6 py-5">
-            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">Balance</p>
+            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">{t("balance")}</p>
             <p className={`text-3xl font-bold ${balance >= 0 ? "text-foreground" : "text-red-500"}`}>
               $ {fmt(Math.abs(balance))}
             </p>
@@ -277,17 +328,17 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
             <ReceiptText className="size-5 text-muted-foreground" />
           </div>
           <div className="flex-1">
-            <p className="font-semibold">Todas las Transacciones</p>
+            <p className="font-semibold">{t("allTransactions")}</p>
             <p className="text-xs text-muted-foreground">
               {hasActiveFilters
-                ? `${filteredSorted.length} de ${transactions.length} transacciones`
-                : `${transactions.length} transacciones registradas`}
+                ? t("countFiltered", { count: filteredSorted.length, total: transactions.length })
+                : t("countRegistered", { count: transactions.length })}
             </p>
           </div>
           {hasActiveFilters && (
             <Badge variant="secondary" className="gap-1 text-xs">
               <Filter className="size-3" />
-              Filtros activos
+              {t("activeFilters")}
             </Badge>
           )}
         </div>
@@ -298,13 +349,13 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
             value={filterType}
             onValueChange={(v) => { setFilterType(v); setPage(1) }}
             options={[
-              { value: "all", label: "Todos los tipos" },
-              { value: "income", label: "Ingresos" },
-              { value: "expense", label: "Gastos" },
-              { value: "transfer", label: "Transferencias" },
-              { value: "saving", label: "Ahorros" },
+              { value: "all", label: t("allTypes") },
+              { value: "income", label: t("income") },
+              { value: "expense", label: t("expenses") },
+              { value: "transfer", label: t("transfers") },
+              { value: "saving", label: t("savings") },
             ]}
-            placeholder="Tipo"
+            placeholder={t("type")}
             className="h-8 w-36 text-xs"
           />
 
@@ -312,10 +363,10 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
             value={filterAccountId}
             onValueChange={(v) => { setFilterAccountId(v); setPage(1) }}
             options={[
-              { value: "all", label: "Todas las cuentas" },
+              { value: "all", label: t("allAccounts") },
               ...accounts.map((a) => ({ value: a.id, label: a.name })),
             ]}
-            placeholder="Cuenta"
+            placeholder={t("account")}
             className="h-8 w-40 text-xs"
           />
 
@@ -323,24 +374,24 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
             value={filterCategoryId}
             onValueChange={(v) => { setFilterCategoryId(v); setPage(1) }}
             options={[
-              { value: "all", label: "Todas las categorías" },
+              { value: "all", label: t("allCategories") },
               ...categories.map((c) => ({ value: c.id, label: `${c.icon ? c.icon + " " : ""}${c.name}` })),
             ]}
-            placeholder="Categoría"
+            placeholder={t("category")}
             className="h-8 w-40 text-xs"
           />
 
           <DatePicker
             value={dateFrom}
             onChange={(v) => { setDateFrom(v); setPage(1) }}
-            placeholder="Desde"
+            placeholder={t("from")}
             className="h-8 w-36 text-xs"
           />
 
           <DatePicker
             value={dateTo}
             onChange={(v) => { setDateTo(v); setPage(1) }}
-            placeholder="Hasta"
+            placeholder={t("to")}
             className="h-8 w-36 text-xs"
           />
 
@@ -352,14 +403,14 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
               onClick={resetFilters}
             >
               <X className="size-3" />
-              Limpiar
+              {t("clear")}
             </Button>
           )}
         </div>
 
         {filteredSorted.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-16">
-            {hasActiveFilters ? "Sin resultados para los filtros aplicados." : "No tienes transacciones. Registra una para empezar."}
+            {hasActiveFilters ? t("noResults") : t("noTransactions")}
           </p>
         ) : (
           <>
@@ -404,7 +455,7 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
                               )}
                               <span className="text-xs text-muted-foreground">·</span>
                               <span className="text-xs text-muted-foreground" suppressHydrationWarning>
-                                {new Date(tx.date).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
+                                {new Date(tx.date).toLocaleTimeString(LOCALE_TAG[locale], { hour: "2-digit", minute: "2-digit" })}
                               </span>
                             </div>
                           </div>
@@ -441,8 +492,8 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
             <div className="flex items-center justify-between px-6 py-3 border-t bg-muted/10">
               <div className="flex items-center gap-2">
                 <p className="text-xs text-muted-foreground">
-                  Página {safePage} de {totalPages}
-                  {nextToken && ` · ${transactions.length} cargadas`}
+                  {t("page", { page: safePage, total: totalPages })}
+                  {nextToken && ` · ${t("loaded", { count: transactions.length })}`}
                 </p>
                 <div className="flex items-center gap-1">
                   {[10, 20, 50, 100].map((size) => (
@@ -518,12 +569,12 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingTransaction ? "Editar transacción" : "Nueva transacción"}
+              {editingTransaction ? t("dialogTitleEdit") : t("dialogTitleNew")}
             </DialogTitle>
             <DialogDescription>
               {editingTransaction
-                ? "Modifica los datos del movimiento seleccionado."
-                : "Registra un ingreso, gasto, transferencia o ahorro."}
+                ? t("dialogDescEdit")
+                : t("dialogDescNew")}
             </DialogDescription>
           </DialogHeader>
           <TransactionForm

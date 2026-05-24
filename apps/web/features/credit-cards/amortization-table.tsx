@@ -2,6 +2,10 @@
 
 import { useState, useMemo } from "react"
 import { Input } from "@workspace/ui/components/input"
+import { useLocale, useTranslations } from "next-intl"
+import { LOCALE_TAG } from "@/lib/dates"
+import type { Locale } from "@/i18n/routing"
+import { useCurrency } from "@/hooks/use-currency"
 
 interface AmortizationRow {
   installment: number
@@ -63,13 +67,10 @@ function buildSchedule(
   return rows
 }
 
-const fmt = (n: number) =>
-  n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-
-function addMonths(base: Date, months: number): string {
+function addMonths(base: Date, months: number, localeTag: string): string {
   const d = new Date(base)
   d.setMonth(d.getMonth() + months)
-  return d.toLocaleDateString("es-MX", { month: "short", year: "2-digit" })
+  return d.toLocaleDateString(localeTag, { month: "short", year: "2-digit" })
 }
 
 export function AmortizationTable({
@@ -78,6 +79,10 @@ export function AmortizationTable({
   installments,
   startDate,
 }: AmortizationTableProps) {
+  const locale = useLocale() as Locale
+  const t = useTranslations("creditCards")
+  const localeTag = LOCALE_TAG[locale]
+  const fmt = useCurrency()
   const [actualPayments, setActualPayments] = useState<Record<number, string>>({})
 
   const i = useMemo(() => monthlyRate(annualRateEA), [annualRateEA])
@@ -109,7 +114,7 @@ export function AmortizationTable({
     <div className="flex flex-col gap-2">
       {hasCustomPayments && (
         <p className="text-xs text-blue-600">
-          Las cuotas siguientes a un pago personalizado se recalculan sobre el saldo restante.
+          {t("amortTableCustomNote")}
         </p>
       )}
       <div className="overflow-x-auto rounded-lg border">
@@ -117,12 +122,12 @@ export function AmortizationTable({
           <thead className="bg-muted/50">
             <tr className="border-b text-muted-foreground">
               <th className="text-left px-2 py-2 font-medium">#</th>
-              <th className="text-left px-2 py-2 font-medium">Fecha est.</th>
-              <th className="text-right px-2 py-2 font-medium">Cuota</th>
-              <th className="text-right px-2 py-2 font-medium text-red-600">Interés</th>
-              <th className="text-right px-2 py-2 font-medium">Capital</th>
-              <th className="text-right px-2 py-2 font-medium">Saldo</th>
-              <th className="text-right px-2 py-2 font-medium">Pago real</th>
+              <th className="text-left px-2 py-2 font-medium">{t("amortTableEstDate")}</th>
+              <th className="text-right px-2 py-2 font-medium">{t("amortTableInstallment")}</th>
+              <th className="text-right px-2 py-2 font-medium text-red-600">{t("amortTableInterest")}</th>
+              <th className="text-right px-2 py-2 font-medium">{t("amortTablePrincipal")}</th>
+              <th className="text-right px-2 py-2 font-medium">{t("amortTableBalance")}</th>
+              <th className="text-right px-2 py-2 font-medium">{t("amortTableActualPayment")}</th>
             </tr>
           </thead>
           <tbody>
@@ -137,7 +142,7 @@ export function AmortizationTable({
                     {row.installment}
                   </td>
                   <td className="px-2 py-1.5 text-muted-foreground">
-                    {addMonths(base, row.installment)}
+                    {addMonths(base, row.installment, localeTag)}
                   </td>
                   <td className="px-2 py-1.5 text-right font-medium">
                     ${fmt(row.scheduledPayment)}
@@ -172,7 +177,7 @@ export function AmortizationTable({
           <tfoot className="bg-muted/30">
             <tr className="border-t font-semibold">
               <td colSpan={2} className="px-2 py-2 text-muted-foreground text-xs">
-                Total
+                {t("amortTableTotal")}
               </td>
               <td className="px-2 py-2 text-right">${fmt(totalPaid)}</td>
               <td className="px-2 py-2 text-right text-red-600">${fmt(totalInterest)}</td>

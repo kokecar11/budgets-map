@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { Button } from "@workspace/ui/components/button"
 import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
+import { useTranslations } from "next-intl"
 import { creditCardApi } from "./api"
 import type { CreditCard, CreditCardCreate, CreditCardUpdate } from "./types"
 
@@ -18,6 +19,8 @@ interface CreditCardFormProps {
 
 export function CreditCardForm({ onSuccess, onCancel, initialValues }: CreditCardFormProps) {
   const { data: session } = useSession()
+  const t = useTranslations("creditCards")
+  const tCommon = useTranslations("common")
   const isEdit = Boolean(initialValues)
 
   const form = useForm({
@@ -41,7 +44,7 @@ export function CreditCardForm({ onSuccess, onCancel, initialValues }: CreditCar
             interest_rate: Number(value.interest_rate),
           }
           card = await creditCardApi.update(initialValues.id, payload, token)
-          toast.success("Tarjeta actualizada")
+          toast.success(t("cardUpdated"))
         } else {
           const payload: CreditCardCreate = {
             alias: value.alias,
@@ -51,11 +54,11 @@ export function CreditCardForm({ onSuccess, onCancel, initialValues }: CreditCar
             interest_rate: Number(value.interest_rate),
           }
           card = await creditCardApi.create(payload, token)
-          toast.success("Tarjeta creada exitosamente")
+          toast.success(t("cardCreated"))
         }
         onSuccess(card)
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Error al guardar la tarjeta")
+        toast.error(err instanceof Error ? err.message : t("errorSaving"))
       }
     },
   })
@@ -70,14 +73,14 @@ export function CreditCardForm({ onSuccess, onCancel, initialValues }: CreditCar
       <FieldGroup>
         <form.Field
           name="alias"
-          validators={{ onSubmit: ({ value }) => !value.trim() ? "El alias es requerido" : undefined }}
+          validators={{ onSubmit: ({ value }) => !value.trim() ? t("aliasRequired") : undefined }}
         >
           {(field) => (
             <Field>
-              <FieldLabel htmlFor="alias">Alias</FieldLabel>
+              <FieldLabel htmlFor="alias">{t("alias")}</FieldLabel>
               <Input
                 id="alias"
-                placeholder="Ej: Visa Platinum"
+                placeholder={t("aliasPlaceholder")}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
@@ -93,7 +96,7 @@ export function CreditCardForm({ onSuccess, onCancel, initialValues }: CreditCar
           <form.Field name="credit_limit">
             {(field) => (
               <Field>
-                <FieldLabel htmlFor="credit_limit">Límite de crédito</FieldLabel>
+                <FieldLabel htmlFor="credit_limit">{t("creditLimit")}</FieldLabel>
                 <Input id="credit_limit" type="number" step="0.01" placeholder="0.00"
                   value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} />
               </Field>
@@ -103,7 +106,7 @@ export function CreditCardForm({ onSuccess, onCancel, initialValues }: CreditCar
           <form.Field name="interest_rate">
             {(field) => (
               <Field>
-                <FieldLabel htmlFor="interest_rate">Tasa de interés (%)</FieldLabel>
+                <FieldLabel htmlFor="interest_rate">{t("interestRate")}</FieldLabel>
                 <Input id="interest_rate" type="number" step="0.01" placeholder="0.00"
                   value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} />
               </Field>
@@ -113,7 +116,7 @@ export function CreditCardForm({ onSuccess, onCancel, initialValues }: CreditCar
           <form.Field name="cutoff_day">
             {(field) => (
               <Field>
-                <FieldLabel htmlFor="cutoff_day">Día de corte</FieldLabel>
+                <FieldLabel htmlFor="cutoff_day">{t("cutoffDay")}</FieldLabel>
                 <Input id="cutoff_day" type="number" min="1" max="31" placeholder="20"
                   value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} />
               </Field>
@@ -123,7 +126,7 @@ export function CreditCardForm({ onSuccess, onCancel, initialValues }: CreditCar
           <form.Field name="payment_day">
             {(field) => (
               <Field>
-                <FieldLabel htmlFor="payment_day">Día de pago</FieldLabel>
+                <FieldLabel htmlFor="payment_day">{t("paymentDay")}</FieldLabel>
                 <Input id="payment_day" type="number" min="1" max="31" placeholder="5"
                   value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} />
               </Field>
@@ -133,12 +136,12 @@ export function CreditCardForm({ onSuccess, onCancel, initialValues }: CreditCar
 
         <div className="flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
+            {tCommon("cancel")}
           </Button>
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Guardando…" : isEdit ? "Guardar cambios" : "Crear tarjeta"}
+                {isSubmitting ? t("saving") : isEdit ? t("saveChanges") : t("createCard")}
               </Button>
             )}
           </form.Subscribe>

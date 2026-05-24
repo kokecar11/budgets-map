@@ -1,3 +1,10 @@
+import type { Locale } from "@/i18n/routing"
+
+export const LOCALE_TAG: Record<Locale, string> = {
+  en: "en-US",
+  es: "es-MX",
+}
+
 /**
  * Parses an ISO date string (e.g. "2026-05-05" or "2026-05-05T00:00:00Z")
  * by extracting the date parts directly, avoiding UTC-to-local conversion.
@@ -13,12 +20,17 @@ export function parseDateParts(dateStr: string): { year: number; month: number; 
 /**
  * Formats a transaction/API date string for display without timezone shift.
  * Consistent between SSR and client hydration.
+ * Default locale is "es" for backward compatibility with existing callsites.
  */
+export function fmtCurrentMonthYear(locale: Locale): string {
+  return new Date().toLocaleDateString(LOCALE_TAG[locale], { month: "long", year: "numeric" })
+}
+
 export function fmtDateLocal(
   dateStr: string,
   options: Intl.DateTimeFormatOptions = { day: "2-digit", month: "short", year: "2-digit" },
-  locale = "es-MX",
+  locale: Locale = "es",
 ): string {
   const { year, month, day } = parseDateParts(dateStr)
-  return new Date(year, month, day).toLocaleDateString(locale, options)
+  return new Date(year, month, day).toLocaleDateString(LOCALE_TAG[locale], options)
 }

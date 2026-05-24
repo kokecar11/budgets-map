@@ -4,6 +4,10 @@ import { useState } from "react"
 import { useSession } from "next-auth/react"
 import { Plus, Trash2, Target, TrendingUp, MoreVertical, Pencil, CheckCircle2, XCircle } from "lucide-react"
 import { toast } from "sonner"
+import { useLocale, useTranslations } from "next-intl"
+import { LOCALE_TAG } from "@/lib/dates"
+import type { Locale } from "@/i18n/routing"
+import { useCurrency } from "@/hooks/use-currency"
 
 import { Button } from "@workspace/ui/components/button"
 import { Badge } from "@workspace/ui/components/badge"
@@ -26,12 +30,6 @@ import { SavingGoalForm } from "./saving-goal-form"
 import { savingGoalApi } from "./api"
 import type { SavingGoal } from "./types"
 
-const STATUS_LABELS = {
-  active: "Activa",
-  completed: "Completada",
-  cancelled: "Cancelada",
-}
-
 const STATUS_BADGE: Record<SavingGoal["status"], string> = {
   active: "bg-green-600/10 text-green-600 border-green-600/20 dark:bg-green-500/10 dark:text-green-400",
   completed: "bg-blue-600/10 text-blue-600 border-blue-600/20 dark:bg-blue-500/10 dark:text-blue-400",
@@ -44,6 +42,8 @@ interface SavingGoalListProps {
 
 export function SavingGoalList({ initialGoals }: SavingGoalListProps) {
   const { data: session } = useSession()
+  const locale = useLocale() as Locale
+  const t = useTranslations("savings")
   const [goals, setGoals] = useState<SavingGoal[]>(initialGoals)
   const [openForm, setOpenForm] = useState(false)
   const [editingGoal, setEditingGoal] = useState<SavingGoal | null>(null)
@@ -62,9 +62,9 @@ export function SavingGoalList({ initialGoals }: SavingGoalListProps) {
     try {
       const updated = await savingGoalApi.update(id, { status }, session?.accessToken ?? "")
       setGoals((prev) => prev.map((g) => (g.id === updated.id ? updated : g)))
-      toast.success(status === "completed" ? "Meta completada" : "Meta cancelada")
+      toast.success(status === "completed" ? t("goalCompleted") : t("goalCancelled"))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error al actualizar la meta")
+      toast.error(err instanceof Error ? err.message : t("errorUpdating"))
     }
   }
 
@@ -72,13 +72,13 @@ export function SavingGoalList({ initialGoals }: SavingGoalListProps) {
     try {
       await savingGoalApi.delete(id, session?.accessToken ?? "")
       setGoals((prev) => prev.filter((g) => g.id !== id))
-      toast.success("Meta eliminada")
+      toast.success(t("goalDeleted"))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error al eliminar la meta")
+      toast.error(err instanceof Error ? err.message : t("errorDeleting"))
     }
   }
 
-  const fmt = (n: number) => n.toLocaleString("es-MX", { minimumFractionDigits: 0 })
+  const fmt = useCurrency()
 
   const totalSaved = goals.reduce((sum, g) => sum + g.current_amount, 0)
   const activeGoals = goals.filter((g) => g.status === "active")
@@ -96,28 +96,28 @@ export function SavingGoalList({ initialGoals }: SavingGoalListProps) {
               <Target className="size-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Metas de Ahorro</h1>
-              <p className="text-sm text-muted-foreground">Alcanza tus objetivos financieros</p>
+              <h1 className="text-xl font-bold">{t("title")}</h1>
+              <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
             </div>
           </div>
           <Button onClick={() => setOpenForm(true)}>
             <Plus className="size-4" />
-            Nueva meta
+            {t("newGoal")}
           </Button>
         </div>
 
         {/* Stats row */}
         <div className="grid grid-cols-3">
           <div className="px-6 py-5">
-            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">Total ahorrado</p>
+            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">{t("totalSaved")}</p>
             <p className="text-3xl font-bold">$ {fmt(totalSaved)}</p>
           </div>
           <div className="px-6 py-5 bg-primary/5 border-x">
-            <p className="text-xs font-semibold tracking-widest text-primary uppercase mb-2">Metas activas</p>
+            <p className="text-xs font-semibold tracking-widest text-primary uppercase mb-2">{t("activeGoals")}</p>
             <p className="text-3xl font-bold text-primary">{activeGoals.length}</p>
           </div>
           <div className="px-6 py-5">
-            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">Completadas</p>
+            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">{t("completed")}</p>
             <p className="text-3xl font-bold">{completedGoals.length}</p>
           </div>
         </div>
@@ -131,14 +131,14 @@ export function SavingGoalList({ initialGoals }: SavingGoalListProps) {
             <TrendingUp className="size-5 text-muted-foreground" />
           </div>
           <div>
-            <p className="font-semibold">Todas las Metas</p>
-            <p className="text-xs text-muted-foreground">{goals.length} metas registradas</p>
+            <p className="font-semibold">{t("allGoals")}</p>
+            <p className="text-xs text-muted-foreground">{t("countRegistered", { count: goals.length })}</p>
           </div>
         </div>
 
         {goals.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-16">
-            No tienes metas de ahorro. Crea una para empezar.
+            {t("noGoals")}
           </p>
         ) : (
           <div className="divide-y">
@@ -156,7 +156,7 @@ export function SavingGoalList({ initialGoals }: SavingGoalListProps) {
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-semibold text-sm">{goal.name}</p>
                       <Badge className={`text-xs h-5 ${STATUS_BADGE[goal.status]}`}>
-                        {STATUS_LABELS[goal.status]}
+                        {t(`status${goal.status.charAt(0).toUpperCase()}${goal.status.slice(1)}` as "statusActive" | "statusCompleted" | "statusCancelled")}
                       </Badge>
                     </div>
 
@@ -172,7 +172,7 @@ export function SavingGoalList({ initialGoals }: SavingGoalListProps) {
 
                     <p className="text-xs text-muted-foreground mt-1">
                       $ {fmt(goal.current_amount)} de $ {fmt(goal.target_amount)}
-                      {goal.deadline ? ` · Hasta ${new Date(goal.deadline).toLocaleDateString("es-MX")}` : ""}
+                      {goal.deadline ? ` · ${t("deadline", { date: new Date(goal.deadline).toLocaleDateString(LOCALE_TAG[locale]) })}` : ""}
                     </p>
                   </div>
 
@@ -189,24 +189,24 @@ export function SavingGoalList({ initialGoals }: SavingGoalListProps) {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => setEditingGoal(goal)}>
                         <Pencil className="size-4 mr-2" />
-                        Editar
+                        {t("editGoal")}
                       </DropdownMenuItem>
                       {goal.status === "active" && (
                         <>
                           <DropdownMenuItem onClick={() => handleSetStatus(goal.id, "completed")}>
                             <CheckCircle2 className="size-4 mr-2 text-green-500" />
-                            Marcar completada
+                            {t("markCompleted")}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleSetStatus(goal.id, "cancelled")}>
                             <XCircle className="size-4 mr-2 text-muted-foreground" />
-                            Cancelar meta
+                            {t("cancelGoal")}
                           </DropdownMenuItem>
                         </>
                       )}
                       {goal.status !== "active" && (
                         <DropdownMenuItem onClick={() => handleSetStatus(goal.id, "active")}>
                           <Target className="size-4 mr-2 text-primary" />
-                          Reactivar meta
+                          {t("reactivateGoal")}
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuItem
@@ -214,7 +214,7 @@ export function SavingGoalList({ initialGoals }: SavingGoalListProps) {
                         onClick={() => handleDelete(goal.id)}
                       >
                         <Trash2 className="size-4 mr-2" />
-                        Eliminar
+                        {t("deleteGoal")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -228,8 +228,8 @@ export function SavingGoalList({ initialGoals }: SavingGoalListProps) {
       <Dialog open={openForm} onOpenChange={setOpenForm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nueva meta de ahorro</DialogTitle>
-            <DialogDescription>Define el monto objetivo y la fecha límite de tu meta.</DialogDescription>
+            <DialogTitle>{t("dialogTitleNew")}</DialogTitle>
+            <DialogDescription>{t("dialogDescNew")}</DialogDescription>
           </DialogHeader>
           <SavingGoalForm
             onSuccess={handleCreated}
@@ -241,8 +241,8 @@ export function SavingGoalList({ initialGoals }: SavingGoalListProps) {
       <Dialog open={Boolean(editingGoal)} onOpenChange={(open) => { if (!open) setEditingGoal(null) }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar meta de ahorro</DialogTitle>
-            <DialogDescription>Actualiza el nombre, monto o fecha límite de la meta.</DialogDescription>
+            <DialogTitle>{t("dialogTitleEdit")}</DialogTitle>
+            <DialogDescription>{t("dialogDescEdit")}</DialogDescription>
           </DialogHeader>
           {editingGoal && (
             <SavingGoalForm

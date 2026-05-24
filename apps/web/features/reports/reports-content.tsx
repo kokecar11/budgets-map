@@ -1,6 +1,10 @@
 "use client"
 
 import { useMemo, useState, useTransition } from "react"
+import { useLocale, useTranslations } from "next-intl"
+import { LOCALE_TAG } from "@/lib/dates"
+import type { Locale } from "@/i18n/routing"
+import { useCurrency } from "@/hooks/use-currency"
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell,
   Pie, PieChart, XAxis, YAxis, Legend, ReferenceLine,
@@ -17,17 +21,10 @@ import { reportsApi } from "./api"
 import type { MonthlyStat, CategoryStat } from "./types"
 import type { Category } from "@/features/categories/types"
 
-const MONTH_NAMES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-
 const DEFAULT_COLORS = [
   "#6366f1", "#f59e0b", "#10b981", "#ef4444",
   "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6",
 ]
-
-const areaConfig = {
-  income:   { label: "Ingresos", color: "var(--color-income)" },
-  expenses: { label: "Gastos",   color: "var(--color-expenses)" },
-} satisfies ChartConfig
 
 interface ReportsContentProps {
   token: string
@@ -41,12 +38,27 @@ interface ReportsContentProps {
 export function ReportsContent({
   token, isPro, initialYear, initialMonthlyStats, initialCategoryStats, categories,
 }: ReportsContentProps) {
+  const t = useTranslations("transactions")
   const [year, setYear] = useState(initialYear)
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null)
   const [monthlyStats, setMonthlyStats] = useState(initialMonthlyStats)
   const [categoryStats, setCategoryStats] = useState(initialCategoryStats)
   const [categoryChartType, setCategoryChartType] = useState<"bar" | "pie">("bar")
   const [isPending, startTransition] = useTransition()
+
+  const locale = useLocale() as Locale
+  const localeTag = LOCALE_TAG[locale]
+  const fmt = useCurrency()
+  const MONTH_NAMES = useMemo(
+    () => Array.from({ length: 12 }, (_, i) =>
+      new Date(2000, i, 1).toLocaleDateString(localeTag, { month: "short" })
+    ),
+    [localeTag]
+  )
+  const areaConfig = useMemo(() => ({
+    income:   { label: t("income"),   color: "var(--color-income)" },
+    expenses: { label: t("expenses"), color: "var(--color-expenses)" },
+  } satisfies ChartConfig), [t])
 
   const categoryColorMap = Object.fromEntries(
     categories.map((c, i) => [c.id, c.color ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length]])
@@ -92,12 +104,12 @@ export function ReportsContent({
         net: s?.net ?? 0,
       }
     })
-  }, [monthlyStats])
+  }, [monthlyStats, MONTH_NAMES])
 
   const categoryData = useMemo(() => {
     return categoryStats
       .map((s, i) => ({
-        name: s.category_id ? (categoryNameMap[s.category_id] ?? "Otra") : "Sin categoría",
+        name: s.category_id ? (categoryNameMap[s.category_id] ?? t("noCategory")) : t("noCategory"),
         amount: s.total,
         count: s.count,
         color: s.category_id
@@ -118,8 +130,6 @@ export function ReportsContent({
   const totalNet      = totalIncome - totalExpenses
   const savingsRate   = totalIncome > 0 ? Math.round((totalNet / totalIncome) * 100) : 0
 
-  const fmt = (n: number) => `$ ${n.toLocaleString("es-MX", { maximumFractionDigits: 0 })}`
-
   return (
     <div className="p-6 flex flex-col gap-6">
 
@@ -131,8 +141,8 @@ export function ReportsContent({
               <FileBarChart className="size-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Reportes financieros</h1>
-              <p className="text-sm text-muted-foreground">Análisis anual de tus finanzas</p>
+              <h1 className="text-xl font-bold">{t("reportTitle")}</h1>
+              <p className="text-sm text-muted-foreground">{t("reportSubtitle")}</p>
             </div>
           </div>
 
@@ -160,19 +170,19 @@ export function ReportsContent({
         <div className="grid grid-cols-2 lg:grid-cols-4">
           <div className="px-6 py-5 bg-green-500/5">
             <p className="text-xs font-semibold tracking-widest text-green-600 dark:text-green-500 uppercase mb-2">
-              Total ingresos
+              {t("reportTotalIncome")}
             </p>
             <p className="text-2xl font-bold text-green-600 dark:text-green-500">{fmt(totalIncome)}</p>
           </div>
           <div className="px-6 py-5 bg-red-500/5 border-l">
             <p className="text-xs font-semibold tracking-widest text-red-600 dark:text-red-500 uppercase mb-2">
-              Total gastos
+              {t("reportTotalExpenses")}
             </p>
             <p className="text-2xl font-bold text-red-600 dark:text-red-500">{fmt(totalExpenses)}</p>
           </div>
           <div className={`px-6 py-5 border-l ${totalNet >= 0 ? "bg-blue-500/5" : "bg-red-500/5"}`}>
             <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">
-              Balance neto
+              {t("reportNetBalance")}
             </p>
             <div className="flex items-center gap-2">
               {totalNet >= 0
@@ -185,7 +195,7 @@ export function ReportsContent({
           </div>
           <div className="px-6 py-5 border-l">
             <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">
-              Tasa de ahorro
+              {t("reportSavingsRate")}
             </p>
             <div className="flex items-center gap-2">
               {savingsRate > 20
@@ -201,13 +211,13 @@ export function ReportsContent({
         </div>
       </div>
 
-      <PremiumGate isPro={isPro} featureName="Reportes financieros">
+      <PremiumGate isPro={isPro} featureName={t("reportTitle")}>
         <div className="flex flex-col gap-6">
 
           {/* Income vs Expenses area chart */}
           <div className="rounded-xl border bg-card p-6">
-            <p className="font-semibold mb-1">Ingresos vs Gastos</p>
-            <p className="text-xs text-muted-foreground mb-4">Todos los meses del año {year}</p>
+            <p className="font-semibold mb-1">{t("reportIncomeVsExpenses")}</p>
+            <p className="text-xs text-muted-foreground mb-4">{t("reportAllMonths", { year })}</p>
             <ChartContainer
               config={areaConfig}
               className="h-64 w-full"
@@ -238,8 +248,8 @@ export function ReportsContent({
 
           {/* Net balance bar chart */}
           <div className="rounded-xl border bg-card p-6">
-            <p className="font-semibold mb-1">Balance mensual neto</p>
-            <p className="text-xs text-muted-foreground mb-4">Ingresos menos gastos por mes</p>
+            <p className="font-semibold mb-1">{t("reportMonthlyNet")}</p>
+            <p className="text-xs text-muted-foreground mb-4">{t("reportIncomeMinusExpenses")}</p>
             <ChartContainer
               config={{ net: { label: "Balance", color: "var(--color-net)" } }}
               className="h-52 w-full"
@@ -265,7 +275,7 @@ export function ReportsContent({
           {/* Top spending categories */}
           <div className="rounded-xl border bg-card p-6">
             <div className="flex items-center justify-between mb-1">
-              <p className="font-semibold">Gastos por categoría</p>
+              <p className="font-semibold">{t("reportExpensesByCategory")}</p>
               <div className="flex items-center gap-2">
                 {/* Month filter */}
                 <div className="flex items-center gap-1 border rounded-lg p-0.5">
@@ -275,7 +285,7 @@ export function ReportsContent({
                     disabled={isPending}
                     className={`h-7 px-2 rounded-md text-xs font-medium transition-colors ${selectedMonth === null ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
                   >
-                    Año
+                    {t("reportYearLabel")}
                   </button>
                   {MONTH_NAMES.map((name, i) => (
                     <button
@@ -310,13 +320,13 @@ export function ReportsContent({
             </div>
             <p className="text-xs text-muted-foreground mb-4">
               {selectedMonth !== null
-                ? `Gastos de ${MONTH_NAMES[selectedMonth - 1]} ${year}`
-                : `Top gastos del año ${year}`}
+                ? t("reportMonthExpenses", { month: MONTH_NAMES[selectedMonth - 1] ?? "", year })
+                : t("reportTopExpenses", { year })}
             </p>
 
             {categoryData.length === 0 ? (
               <div className="h-52 flex items-center justify-center">
-                <p className="text-sm text-muted-foreground">Sin gastos registrados</p>
+                <p className="text-sm text-muted-foreground">{t("reportNoExpenses")}</p>
               </div>
             ) : categoryChartType === "bar" ? (
               <ChartContainer config={catConfig} className="h-64 w-full">

@@ -16,13 +16,10 @@ import type { Category } from "@/features/categories/types"
 import type { SavingGoal } from "@/features/savings/types"
 import type { Loan } from "@/features/loans/types"
 import { loanPaymentApi } from "@/features/loans/api"
+import { useTranslations } from "next-intl"
+import { useCurrency } from "@/hooks/use-currency"
 
-const TYPE_OPTIONS = [
-  { value: "expense", label: "Gasto" },
-  { value: "income", label: "Ingreso" },
-  { value: "transfer", label: "Transferencia" },
-  { value: "saving", label: "Ahorro" },
-]
+// TYPE_OPTIONS are built inside the component via useTranslations
 
 function toTimeString(isoDate: string): string {
   const d = new Date(isoDate)
@@ -52,7 +49,16 @@ export function TransactionForm({
   onSuccess,
   onCancel,
 }: TransactionFormProps) {
+  const t = useTranslations("transactions")
+  const fmt = useCurrency()
   const isEditing = !!initialValues
+
+  const TYPE_OPTIONS = [
+    { value: "expense", label: t("typeExpense") },
+    { value: "income", label: t("typeIncome") },
+    { value: "transfer", label: t("typeTransfer") },
+    { value: "saving", label: t("typeSaving") },
+  ]
 
   const activeGoals = savingGoals.filter((g) => g.status === "active")
   const activeLoans = loans.filter((l) => l.status === "active")
@@ -115,7 +121,7 @@ export function TransactionForm({
             payload,
             token,
           )
-          toast.success("Transacción actualizada")
+          toast.success(t("updated"))
           onSuccess(tx)
           return
         }
@@ -162,15 +168,15 @@ export function TransactionForm({
         }
 
         const tx = await transactionApi.create(payload, token)
-        toast.success("Transacción registrada exitosamente")
+        toast.success(t("created"))
         onSuccess(tx)
       } catch (err) {
         if (err instanceof Error && err.message === "RECURRING_LIMIT_REACHED") {
           toast.error(
-            "El plan gratuito permite solo 1 transacción recurrente. Actualiza a Pro.",
+            t("recurringLimitReached"),
             {
               action: {
-                label: "Ver planes",
+                label: t("seePlans"),
                 onClick: () => {
                   window.location.href = "/pricing"
                 },
@@ -181,7 +187,7 @@ export function TransactionForm({
           toast.error(
             err instanceof Error
               ? err.message
-              : "Error al guardar la transacción",
+              : t("errorSaving"),
           )
         }
       }
@@ -202,12 +208,12 @@ export function TransactionForm({
             name="account_id"
             validators={{
               onSubmit: ({ value }) =>
-                !value ? "Selecciona una cuenta" : undefined,
+                !value ? t("accountRequired") : undefined,
             }}
           >
             {(field) => (
               <Field>
-                <FieldLabel>Cuenta</FieldLabel>
+                <FieldLabel>{t("account")}</FieldLabel>
                 <SearchSelect
                   value={field.state.value}
                   onValueChange={(v) => field.handleChange(v)}
@@ -215,8 +221,8 @@ export function TransactionForm({
                     value: a.id,
                     label: a.name,
                   }))}
-                  placeholder="Seleccionar cuenta"
-                  searchPlaceholder="Buscar cuenta..."
+                  placeholder={t("selectAccount")}
+                  searchPlaceholder={t("searchAccount")}
                 />
                 {field.state.meta.errors.length > 0 && (
                   <p className="text-destructive text-sm">
@@ -233,7 +239,7 @@ export function TransactionForm({
           <form.Field name="type">
             {(field) => (
               <Field>
-                <FieldLabel>Tipo</FieldLabel>
+                <FieldLabel>{t("type")}</FieldLabel>
                 <SearchSelect
                   value={field.state.value}
                   onValueChange={(v) =>
@@ -250,12 +256,12 @@ export function TransactionForm({
             name="amount"
             validators={{
               onSubmit: ({ value }) =>
-                !value || Number(value) <= 0 ? "Monto inválido" : undefined,
+                !value || Number(value) <= 0 ? t("invalidAmount") : undefined,
             }}
           >
             {(field) => (
               <Field>
-                <FieldLabel htmlFor="amount">Monto</FieldLabel>
+                <FieldLabel htmlFor="amount">{t("amount")}</FieldLabel>
                 <Input
                   id="amount"
                   type="number"
@@ -280,7 +286,7 @@ export function TransactionForm({
           <form.Field name="date">
             {(field) => (
               <Field>
-                <FieldLabel>Fecha</FieldLabel>
+                <FieldLabel>{t("date")}</FieldLabel>
                 <DatePicker
                   value={field.state.value ?? ""}
                   onChange={field.handleChange}
@@ -292,7 +298,7 @@ export function TransactionForm({
           <form.Field name="time">
             {(field) => (
               <Field>
-                <FieldLabel htmlFor="time">Hora</FieldLabel>
+                <FieldLabel htmlFor="time">{t("time")}</FieldLabel>
                 <Input
                   id="time"
                   type="time"
@@ -309,8 +315,8 @@ export function TransactionForm({
           {(field) => (
             <Field>
               <FieldLabel>
-                Categoría{" "}
-                <span className="text-muted-foreground">(opcional)</span>
+                {t("category")}{" "}
+                <span className="text-muted-foreground">({t("noCategory")})</span>
               </FieldLabel>
               <SearchSelect
                 value={field.state.value}
@@ -319,8 +325,8 @@ export function TransactionForm({
                   value: c.id,
                   label: `${c.icon ? `${c.icon} ` : ""}${c.name}`,
                 }))}
-                placeholder="Sin categoría"
-                searchPlaceholder="Buscar categoría..."
+                placeholder={t("noCategory")}
+                searchPlaceholder={t("searchCategory")}
               />
             </Field>
           )}
@@ -331,12 +337,12 @@ export function TransactionForm({
           {(field) => (
             <Field>
               <FieldLabel htmlFor="description">
-                Descripción{" "}
-                <span className="text-muted-foreground">(opcional)</span>
+                {t("descriptionField")}{" "}
+                <span className="text-muted-foreground">({t("noCategory")})</span>
               </FieldLabel>
               <Input
                 id="description"
-                placeholder="Ej: Supermercado"
+                placeholder={t("descriptionPlaceholder")}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
               />
@@ -360,21 +366,21 @@ export function TransactionForm({
                     {(field) => (
                       <Field>
                         <FieldLabel>
-                          Meta de ahorro{" "}
+                          {t("savingGoal")}{" "}
                           <span className="text-muted-foreground">
-                            (opcional)
+                            ({t("noSpecificGoal")})
                           </span>
                         </FieldLabel>
                         {activeGoals.length === 0 ? (
                           <p className="text-sm text-muted-foreground rounded-md border border-dashed px-3 py-2">
-                            No tienes metas activas.{" "}
+                            {t("noActiveGoals")}{" "}
                             <a
                               href="/savings"
                               className="underline underline-offset-2 hover:text-foreground"
                             >
-                              Crea una en Ahorros
+                              {t("createInSavings")}
                             </a>{" "}
-                            para vincular este ahorro.
+                            {t("toLink")}
                           </p>
                         ) : (
                           <SearchSelect
@@ -384,8 +390,8 @@ export function TransactionForm({
                               value: g.id,
                               label: g.name,
                             }))}
-                            placeholder="Sin meta específica"
-                            searchPlaceholder="Buscar meta..."
+                            placeholder={t("noSpecificGoal")}
+                            searchPlaceholder={t("searchGoal")}
                           />
                         )}
                       </Field>
@@ -399,12 +405,12 @@ export function TransactionForm({
                     name="transfer_to_account_id"
                     validators={{
                       onSubmit: ({ value }) =>
-                        !value ? "Selecciona la cuenta destino" : undefined,
+                        !value ? t("destinationRequired") : undefined,
                     }}
                   >
                     {(field) => (
                       <Field>
-                        <FieldLabel>Cuenta destino</FieldLabel>
+                        <FieldLabel>{t("destinationAccount")}</FieldLabel>
                         <SearchSelect
                           value={field.state.value}
                           onValueChange={(v) => field.handleChange(v)}
@@ -412,8 +418,8 @@ export function TransactionForm({
                             value: a.id,
                             label: a.name,
                           }))}
-                          placeholder="Seleccionar cuenta destino"
-                          searchPlaceholder="Buscar cuenta..."
+                          placeholder={t("selectDestination")}
+                          searchPlaceholder={t("searchAccountDest")}
                         />
                         {field.state.meta.errors.length > 0 && (
                           <p className="text-destructive text-sm">
@@ -431,9 +437,9 @@ export function TransactionForm({
                     {(field) => (
                       <Field>
                         <FieldLabel>
-                          Pago a préstamo{" "}
+                          {t("loanPayment")}{" "}
                           <span className="text-muted-foreground">
-                            (opcional)
+                            ({t("noLoanLink")})
                           </span>
                         </FieldLabel>
                         <SearchSelect
@@ -443,8 +449,8 @@ export function TransactionForm({
                             value: l.id,
                             label: `${l.name} — ${l.lender}`,
                           }))}
-                          placeholder="No vincular a préstamo"
-                          searchPlaceholder="Buscar préstamo..."
+                          placeholder={t("noLoanLink")}
+                          searchPlaceholder={t("searchLoan")}
                         />
                       </Field>
                     )}
@@ -457,9 +463,9 @@ export function TransactionForm({
                     {(field) => (
                       <Field>
                         <FieldLabel htmlFor="interest_paid">
-                          Interés del pago{" "}
+                          {t("loanInterest")}{" "}
                           <span className="text-muted-foreground">
-                            (opcional)
+                            ({t("noLoanLink")})
                           </span>
                         </FieldLabel>
                         <Input
@@ -484,25 +490,18 @@ export function TransactionForm({
                                 <div className="rounded-lg bg-muted/50 border p-2.5 text-xs flex flex-col gap-1">
                                   <div className="flex justify-between">
                                     <span className="text-muted-foreground">
-                                      Capital
+                                      {t("capitalLabel")}
                                     </span>
                                     <span className="font-medium">
-                                      $
-                                      {principal.toLocaleString("es-MX", {
-                                        minimumFractionDigits: 2,
-                                      })}
+                                      {fmt(principal)}
                                     </span>
                                   </div>
                                   <div className="flex justify-between">
                                     <span className="text-muted-foreground">
-                                      Interés
+                                      {t("interestLabel")}
                                     </span>
                                     <span className="font-medium text-red-600">
-                                      $
-                                      {Number(interest).toLocaleString(
-                                        "es-MX",
-                                        { minimumFractionDigits: 2 },
-                                      )}
+                                      {fmt(Number(interest))}
                                     </span>
                                   </div>
                                 </div>
@@ -527,9 +526,9 @@ export function TransactionForm({
               {(field) => (
                 <div className="flex items-center justify-between rounded-lg border px-3 py-2.5">
                   <div>
-                    <p className="text-sm font-medium">Transacción recurrente</p>
+                    <p className="text-sm font-medium">{t("recurringTransaction")}</p>
                     {!isPro && (
-                      <p className="text-xs text-muted-foreground">Plan gratuito: máx. 1 recurrente</p>
+                      <p className="text-xs text-muted-foreground">{t("freePlanLimit")}</p>
                     )}
                   </div>
                   <Switch
@@ -546,7 +545,7 @@ export function TransactionForm({
                   <form.Field name="recurrence">
                     {(field) => (
                       <Field>
-                        <FieldLabel>Frecuencia</FieldLabel>
+                        <FieldLabel>{t("frequency")}</FieldLabel>
                         <SearchSelect
                           value={field.state.value}
                           onValueChange={(v) =>
@@ -555,10 +554,10 @@ export function TransactionForm({
                             )
                           }
                           options={[
-                            { value: "weekly", label: "Semanal" },
-                            { value: "monthly", label: "Mensual" },
+                            { value: "weekly", label: t("weekly") },
+                            { value: "monthly", label: t("monthly") },
                           ]}
-                          placeholder="Seleccionar frecuencia"
+                          placeholder={t("selectFrequency")}
                         />
                       </Field>
                     )}
@@ -571,18 +570,18 @@ export function TransactionForm({
 
         <div className="flex gap-2 justify-end pt-1">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
+            {t("cancel")}
           </Button>
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting
                   ? isEditing
-                    ? "Guardando…"
-                    : "Creando…"
+                    ? t("saving")
+                    : t("creating")
                   : isEditing
-                    ? "Guardar cambios"
-                    : "Crear transacción"}
+                    ? t("saveChanges")
+                    : t("create")}
               </Button>
             )}
           </form.Subscribe>

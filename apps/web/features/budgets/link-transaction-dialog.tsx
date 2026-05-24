@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Unlink } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -33,6 +34,8 @@ export function LinkTransactionDialog({
   budget,
   onLink,
 }: LinkTransactionDialogProps) {
+  const t = useTranslations("budgets")
+  const tCommon = useTranslations("common")
   const [selectedId, setSelectedId] = useState<string>(item.transaction_id ?? "")
   const [loading, setLoading] = useState(false)
 
@@ -46,9 +49,9 @@ export function LinkTransactionDialog({
     )
   })
 
-  const options = eligible.map((t) => ({
-    value: t.id,
-    label: `${t.description ?? "Sin descripción"} — $${t.amount.toLocaleString()} (${new Date(t.date).toLocaleDateString()})`,
+  const options = eligible.map((tx) => ({
+    value: tx.id,
+    label: `${tx.description ?? tCommon("noData")} — $${tx.amount.toLocaleString()} (${new Date(tx.date).toLocaleDateString()})`,
   }))
 
   async function handleLink() {
@@ -76,9 +79,9 @@ export function LinkTransactionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Vincular transacción</DialogTitle>
+          <DialogTitle>{t("linkTransaction")}</DialogTitle>
           <DialogDescription>
-            Selecciona un gasto de {budget.month}/{budget.year} para vincularlo a &ldquo;{item.description}&rdquo;.
+            {t("linkDesc", { month: budget.month, year: budget.year, item: item.description })}
           </DialogDescription>
         </DialogHeader>
 
@@ -87,9 +90,9 @@ export function LinkTransactionDialog({
             value={selectedId}
             onValueChange={setSelectedId}
             options={options}
-            placeholder="Seleccionar transacción…"
-            searchPlaceholder="Buscar transacción…"
-            emptyText="Sin gastos en este mes"
+            placeholder={t("selectTransaction")}
+            searchPlaceholder={t("searchTransaction")}
+            emptyText={t("noExpenses")}
           />
 
           <div className="flex justify-between gap-2">
@@ -102,7 +105,7 @@ export function LinkTransactionDialog({
                 disabled={loading}
               >
                 <Unlink className="size-4" />
-                Desvincular
+                {t("unlink")}
               </Button>
             )}
             <div className="flex gap-2 ml-auto">
@@ -112,14 +115,14 @@ export function LinkTransactionDialog({
                 onClick={() => onOpenChange(false)}
                 disabled={loading}
               >
-                Cancelar
+                {tCommon("cancel")}
               </Button>
               <Button
                 type="button"
                 onClick={handleLink}
                 disabled={!selectedId || loading}
               >
-                {loading ? "Vinculando…" : "Vincular"}
+                {loading ? t("linking") : t("link")}
               </Button>
             </div>
           </div>

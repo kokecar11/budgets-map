@@ -22,22 +22,45 @@ import {
   useSidebar,
 } from "@workspace/ui/components/sidebar"
 import {
-  CreditCard,
   EllipsisVertical,
   LogOut,
   Settings,
-  UserCircle,
 } from "lucide-react"
+import React from "react"
 
-export function NavUser({
-  user,
-}: {
+export interface NavUserLabels {
+  settings: string
+  signOut: string
+  settingsUrl: string
+  signOutAction: () => Promise<void>
+}
+
+export interface NavUserProps {
   user: {
     name: string
     email: string
     avatar: string
+    plan?: string
   }
-}) {
+  labels: NavUserLabels
+  extras?: React.ReactNode
+}
+
+function PlanBadge({ plan }: { plan?: string }) {
+  if (!plan) return null
+  const isPro = plan === "pro"
+  return (
+    <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none ${
+      isPro
+        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
+        : "bg-muted text-muted-foreground"
+    }`}>
+      {isPro ? "Pro" : "Free"}
+    </span>
+  )
+}
+
+export function NavUser({ user, labels, extras }: NavUserProps) {
   const { isMobile } = useSidebar()
 
   const initials = user.name
@@ -86,7 +109,10 @@ export function NavUser({
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate font-medium">{user.name}</span>
+                    <PlanBadge plan={user.plan} />
+                  </div>
                   <span className="text-muted-foreground truncate text-xs">
                     {user.email}
                   </span>
@@ -95,36 +121,18 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              {/* <DropdownMenuItem asChild>
-                <Link href="/settings">
-                  <UserCircle />
-                  Perfil
-                </Link>
-              </DropdownMenuItem> */}
-              {/* <DropdownMenuItem asChild>
-                <Link href="/settings/billing">
-                  <CreditCard />
-                  Suscripción
-                </Link>
-              </DropdownMenuItem> */}
               <DropdownMenuItem asChild>
-                <Link href="/settings">
+                <Link href={labels.settingsUrl}>
                   <Settings />
-                  Configuración
+                  {labels.settings}
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
+            {extras}
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <form action="/api/auth/signout" method="POST" className="w-full">
-                <button
-                  type="submit"
-                  className="flex w-full items-center gap-2"
-                >
-                  <LogOut className="size-4" />
-                  Cerrar sesión
-                </button>
-              </form>
+            <DropdownMenuItem onSelect={() => labels.signOutAction()}>
+              <LogOut className="size-4" />
+              {labels.signOut}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
