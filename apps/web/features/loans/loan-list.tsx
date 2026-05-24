@@ -5,6 +5,8 @@ import { useSession } from "next-auth/react"
 import { Plus, Trash2, Landmark, CreditCard, Percent, CalendarDays, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
+import { useTranslations } from "next-intl"
+import { useCurrency } from "@/hooks/use-currency"
 
 import { Button } from "@workspace/ui/components/button"
 import { Badge } from "@workspace/ui/components/badge"
@@ -20,8 +22,6 @@ import { LoanForm } from "./loan-form"
 import { loanApi } from "./api"
 import type { Loan } from "./types"
 
-const STATUS_LABELS = { active: "Activo", paid: "Pagado", defaulted: "En mora" }
-
 const STATUS_BADGE: Record<Loan["status"], string> = {
   active: "bg-green-600/10 text-green-600 border-green-600/20 dark:bg-green-500/10 dark:text-green-400",
   paid: "bg-blue-600/10 text-blue-600 border-blue-600/20 dark:bg-blue-500/10 dark:text-blue-400",
@@ -34,6 +34,7 @@ interface LoanListProps {
 
 export function LoanList({ initialLoans }: LoanListProps) {
   const { data: session } = useSession()
+  const t = useTranslations("loans")
   const [loans, setLoans] = useState<Loan[]>(initialLoans)
   const [openForm, setOpenForm] = useState(false)
 
@@ -46,13 +47,13 @@ export function LoanList({ initialLoans }: LoanListProps) {
     try {
       await loanApi.delete(id, session?.accessToken ?? "")
       setLoans((prev) => prev.filter((l) => l.id !== id))
-      toast.success("Préstamo eliminado")
+      toast.success(t("loanDeleted"))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error al eliminar el préstamo")
+      toast.error(err instanceof Error ? err.message : t("errorDeleting"))
     }
   }
 
-  const fmt = (n: number) => n.toLocaleString("es-MX", { minimumFractionDigits: 0 })
+  const fmt = useCurrency()
 
   const totalDebt = loans.filter((l) => l.status === "active").reduce((sum, l) => sum + l.balance, 0)
   const totalMonthly = loans.filter((l) => l.status === "active").reduce((sum, l) => sum + l.monthly_payment, 0)
@@ -70,28 +71,28 @@ export function LoanList({ initialLoans }: LoanListProps) {
               <Landmark className="size-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Préstamos</h1>
-              <p className="text-sm text-muted-foreground">Administra tus créditos y obligaciones</p>
+              <h1 className="text-xl font-bold">{t("title")}</h1>
+              <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
             </div>
           </div>
           <Button onClick={() => setOpenForm(true)}>
             <Plus className="size-4" />
-            Nuevo préstamo
+            {t("newLoan")}
           </Button>
         </div>
 
         {/* Stats row */}
         <div className="grid grid-cols-3">
           <div className="px-6 py-5 bg-red-500/5">
-            <p className="text-xs font-semibold tracking-widest text-red-600 dark:text-red-500 uppercase mb-2">Deuda total</p>
+            <p className="text-xs font-semibold tracking-widest text-red-600 dark:text-red-500 uppercase mb-2">{t("totalDebt")}</p>
             <p className="text-3xl font-bold text-red-600 dark:text-red-500">$ {fmt(totalDebt)}</p>
           </div>
           <div className="px-6 py-5 border-x">
-            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">Pago mensual total</p>
+            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">{t("totalMonthly")}</p>
             <p className="text-3xl font-bold">$ {fmt(totalMonthly)}</p>
           </div>
           <div className="px-6 py-5 bg-primary/5">
-            <p className="text-xs font-semibold tracking-widest text-primary uppercase mb-2">Préstamos activos</p>
+            <p className="text-xs font-semibold tracking-widest text-primary uppercase mb-2">{t("activeLoans")}</p>
             <p className="text-3xl font-bold text-primary">{activeLoans.length}</p>
           </div>
         </div>
@@ -105,14 +106,14 @@ export function LoanList({ initialLoans }: LoanListProps) {
             <Landmark className="size-5 text-muted-foreground" />
           </div>
           <div>
-            <p className="font-semibold">Todos los Préstamos</p>
-            <p className="text-xs text-muted-foreground">{loans.length} préstamos registrados</p>
+            <p className="font-semibold">{t("allLoans")}</p>
+            <p className="text-xs text-muted-foreground">{t("countRegistered", { count: loans.length })}</p>
           </div>
         </div>
 
         {loans.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-16">
-            No tienes préstamos registrados.
+            {t("noLoans")}
           </p>
         ) : (
           <div className="divide-y">
@@ -129,21 +130,21 @@ export function LoanList({ initialLoans }: LoanListProps) {
                     </Link>
                     <Badge variant="outline" className="text-xs h-5">{loan.lender}</Badge>
                     <Badge className={`text-xs h-5 ${STATUS_BADGE[loan.status]}`}>
-                      {STATUS_LABELS[loan.status]}
+                      {t(`status${loan.status.charAt(0).toUpperCase()}${loan.status.slice(1)}` as "statusActive" | "statusPaid" | "statusDefaulted")}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <CreditCard className="size-3" />
-                      Cuota: $ {fmt(loan.monthly_payment)}
+                      {t("installment")}: $ {fmt(loan.monthly_payment)}
                     </span>
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Percent className="size-3" />
-                      Tasa: {loan.interest_rate}%
+                      {t("rate")}: {loan.interest_rate}%
                     </span>
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <CalendarDays className="size-3" />
-                      Día {loan.payment_day}
+                      {t("paymentDay", { day: loan.payment_day })}
                     </span>
                   </div>
                 </div>
@@ -173,8 +174,8 @@ export function LoanList({ initialLoans }: LoanListProps) {
       <Dialog open={openForm} onOpenChange={setOpenForm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nuevo préstamo</DialogTitle>
-            <DialogDescription>Registra un préstamo con sus condiciones de pago e interés.</DialogDescription>
+            <DialogTitle>{t("dialogTitleNew")}</DialogTitle>
+            <DialogDescription>{t("dialogDescNew")}</DialogDescription>
           </DialogHeader>
           <LoanForm
             onSuccess={handleCreated}

@@ -5,6 +5,8 @@ import { useSession } from "next-auth/react"
 import { Plus, Trash2, CreditCard as CreditCardIcon, CalendarDays, Percent, ChevronRight, Pencil } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
+import { useTranslations } from "next-intl"
+import { useCurrency } from "@/hooks/use-currency"
 
 import { Button } from "@workspace/ui/components/button"
 import { Progress } from "@workspace/ui/components/progress"
@@ -34,6 +36,7 @@ function latestPeriod(periods: CreditCardPeriod[]): CreditCardPeriod | null {
 
 export function CreditCardList({ initialCards, periodsByCard }: CreditCardListProps) {
   const { data: session } = useSession()
+  const t = useTranslations("creditCards")
   const [cards, setCards] = useState<CreditCard[]>(initialCards)
   const [openForm, setOpenForm] = useState(false)
   const [editingCard, setEditingCard] = useState<CreditCard | null>(null)
@@ -52,13 +55,13 @@ export function CreditCardList({ initialCards, periodsByCard }: CreditCardListPr
     try {
       await creditCardApi.delete(id, session?.accessToken ?? "")
       setCards((prev) => prev.filter((c) => c.id !== id))
-      toast.success("Tarjeta eliminada")
+      toast.success(t("cardDeleted"))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error al eliminar la tarjeta")
+      toast.error(err instanceof Error ? err.message : t("errorDeleting"))
     }
   }
 
-  const fmt = (n: number) => n.toLocaleString("es-MX", { minimumFractionDigits: 0 })
+  const fmt = useCurrency()
 
   const totalLimit = cards.reduce((sum, c) => sum + c.credit_limit, 0)
   const totalDebt = cards.reduce((sum, c) => {
@@ -80,27 +83,27 @@ export function CreditCardList({ initialCards, periodsByCard }: CreditCardListPr
               <CreditCardIcon className="size-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Tarjetas de Crédito</h1>
-              <p className="text-sm text-muted-foreground">Administra todas tus tarjetas</p>
+              <h1 className="text-xl font-bold">{t("title")}</h1>
+              <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
             </div>
           </div>
           <Button onClick={() => setOpenForm(true)}>
             <Plus className="size-4" />
-            Nueva tarjeta
+            {t("newCard")}
           </Button>
         </div>
 
         <div className="grid grid-cols-3">
           <div className="px-6 py-5">
-            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">Límite total</p>
+            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">{t("totalLimit")}</p>
             <p className="text-3xl font-bold">$ {fmt(totalLimit)}</p>
           </div>
           <div className="px-6 py-5 bg-red-500/5 border-x">
-            <p className="text-xs font-semibold tracking-widest text-red-600 dark:text-red-500 uppercase mb-2">Deuda actual</p>
+            <p className="text-xs font-semibold tracking-widest text-red-600 dark:text-red-500 uppercase mb-2">{t("currentDebt")}</p>
             <p className="text-3xl font-bold text-red-600 dark:text-red-500">$ {fmt(totalDebt)}</p>
           </div>
           <div className="px-6 py-5">
-            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">Promedio tasa</p>
+            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">{t("averageRate")}</p>
             <p className="text-3xl font-bold">{avgRate.toFixed(1)}%</p>
           </div>
         </div>
@@ -113,14 +116,14 @@ export function CreditCardList({ initialCards, periodsByCard }: CreditCardListPr
             <CreditCardIcon className="size-5 text-muted-foreground" />
           </div>
           <div>
-            <p className="font-semibold">Todas las Tarjetas</p>
-            <p className="text-xs text-muted-foreground">{cards.length} tarjetas registradas</p>
+            <p className="font-semibold">{t("allCards")}</p>
+            <p className="text-xs text-muted-foreground">{t("countRegistered", { count: cards.length })}</p>
           </div>
         </div>
 
         {cards.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-16">
-            No tienes tarjetas de crédito registradas.
+            {t("noCards")}
           </p>
         ) : (
           <div className="divide-y">
@@ -157,18 +160,18 @@ export function CreditCardList({ initialCards, periodsByCard }: CreditCardListPr
                         </Link>
                         <span className="flex items-center gap-1 text-xs text-muted-foreground border rounded-full px-2 py-0.5">
                           <CalendarDays className="size-3" />
-                          Corte {card.cutoff_day} · Pago {card.payment_day}
+                          {t("cutoffAndPayment", { cutoff: card.cutoff_day, payment: card.payment_day })}
                         </span>
                         <span className="flex items-center gap-1 text-xs text-muted-foreground border rounded-full px-2 py-0.5">
                           <Percent className="size-3" />
-                          {card.interest_rate}% E.A.
+                          {t("annualRate", { rate: card.interest_rate })}
                         </span>
                       </div>
                     </div>
 
                     <div className="text-right shrink-0">
                       <p className={`font-bold text-base ${usageColor}`}>$ {fmt(balance)}</p>
-                      <p className="text-xs text-muted-foreground">de $ {fmt(card.credit_limit)}</p>
+                      <p className="text-xs text-muted-foreground">{t("ofAmount", { amount: `$ ${fmt(card.credit_limit)}` })}</p>
                     </div>
 
                     <Button
@@ -176,7 +179,7 @@ export function CreditCardList({ initialCards, periodsByCard }: CreditCardListPr
                       variant="ghost"
                       className="size-8 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={() => setEditingCard(card)}
-                      title="Editar tarjeta"
+                      title={t("editCard")}
                     >
                       <Pencil className="size-4" />
                     </Button>
@@ -198,8 +201,8 @@ export function CreditCardList({ initialCards, periodsByCard }: CreditCardListPr
                   {/* Usage progress */}
                   <div className="mt-3 pl-14">
                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                      <span>{usagePct.toFixed(0)}% usado</span>
-                      <span>$ {fmt(available)} disponible</span>
+                      <span>{t("used", { pct: usagePct.toFixed(0) })}</span>
+                      <span>{t("available", { amount: `$ ${fmt(available)}` })}</span>
                     </div>
                     <Progress value={usagePct} className={`h-1.5 ${progressClass}`} />
                   </div>
@@ -213,8 +216,8 @@ export function CreditCardList({ initialCards, periodsByCard }: CreditCardListPr
       <Dialog open={openForm} onOpenChange={setOpenForm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nueva tarjeta de crédito</DialogTitle>
-            <DialogDescription>Registra una tarjeta con su límite, tasa de interés y fechas de corte.</DialogDescription>
+            <DialogTitle>{t("dialogTitleNew")}</DialogTitle>
+            <DialogDescription>{t("dialogDescNew")}</DialogDescription>
           </DialogHeader>
           <CreditCardForm
             onSuccess={handleCreated}
@@ -226,8 +229,8 @@ export function CreditCardList({ initialCards, periodsByCard }: CreditCardListPr
       <Dialog open={Boolean(editingCard)} onOpenChange={(open) => { if (!open) setEditingCard(null) }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar tarjeta</DialogTitle>
-            <DialogDescription>Actualiza el alias, límite, tasa o días de corte y pago.</DialogDescription>
+            <DialogTitle>{t("dialogTitleEdit")}</DialogTitle>
+            <DialogDescription>{t("dialogDescEdit")}</DialogDescription>
           </DialogHeader>
           {editingCard && (
             <CreditCardForm

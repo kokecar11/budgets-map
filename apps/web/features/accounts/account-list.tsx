@@ -4,6 +4,8 @@ import { useState } from "react"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import { Plus, Trash2, Wallet, Building2, Banknote, Smartphone, Eye, EyeOff, RefreshCw, Pencil } from "lucide-react"
+import { useTranslations } from "next-intl"
+import { useCurrency } from "@/hooks/use-currency"
 
 import { Button } from "@workspace/ui/components/button"
 import { Badge } from "@workspace/ui/components/badge"
@@ -19,11 +21,7 @@ import { AccountForm } from "./account-form"
 import { accountApi } from "./api"
 import type { Account } from "./types"
 
-const TYPE_LABELS: Record<Account["type"], string> = {
-  bank: "Banco",
-  cash: "Efectivo",
-  digital_wallet: "Cartera digital",
-}
+// TYPE_LABELS handled via useTranslations in component
 
 const TYPE_ICONS: Record<Account["type"], React.ElementType> = {
   bank: Building2,
@@ -37,6 +35,12 @@ interface AccountListProps {
 
 export function AccountList({ initialAccounts }: AccountListProps) {
   const { data: session } = useSession()
+  const t = useTranslations("accounts")
+  const TYPE_LABELS: Record<Account["type"], string> = {
+    bank: t("typeBank"),
+    cash: t("typeCash"),
+    digital_wallet: t("typeDigitalWallet"),
+  }
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts)
   const [openForm, setOpenForm] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
@@ -58,9 +62,9 @@ export function AccountList({ initialAccounts }: AccountListProps) {
     try {
       const updated = await accountApi.recalculate(id, session?.accessToken ?? "")
       setAccounts((prev) => prev.map((a) => (a.id === updated.id ? updated : a)))
-      toast.success("Balance sincronizado")
+      toast.success(t("synced"))
     } catch {
-      toast.error("Error al sincronizar el balance")
+      toast.error(t("errorSyncing"))
     } finally {
       setSyncing((prev) => { const next = new Set(prev); next.delete(id); return next })
     }
@@ -80,7 +84,7 @@ export function AccountList({ initialAccounts }: AccountListProps) {
     })
   }
 
-  const fmt = (n: number) => n.toLocaleString("es-MX", { minimumFractionDigits: 0 })
+  const fmt = useCurrency()
 
   const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0)
   const activeAccounts = accounts.filter((a) => a.is_active)
@@ -97,28 +101,28 @@ export function AccountList({ initialAccounts }: AccountListProps) {
               <Wallet className="size-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Mis Cuentas</h1>
-              <p className="text-sm text-muted-foreground">Gestiona tus cuentas bancarias y carteras digitales</p>
+              <h1 className="text-xl font-bold">{t("title")}</h1>
+              <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
             </div>
           </div>
           <Button onClick={() => setOpenForm(true)}>
             <Plus className="size-4" />
-            Nueva cuenta
+            {t("newAccount")}
           </Button>
         </div>
 
         {/* Stats row */}
         <div className="grid grid-cols-3">
           <div className="px-6 py-5">
-            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">Balance total</p>
+            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">{t("totalBalance")}</p>
             <p className="text-3xl font-bold">$ {fmt(totalBalance)}</p>
           </div>
           <div className="px-6 py-5 bg-primary/5 border-x">
-            <p className="text-xs font-semibold tracking-widest text-primary uppercase mb-2">Cuentas activas</p>
+            <p className="text-xs font-semibold tracking-widest text-primary uppercase mb-2">{t("activeAccounts")}</p>
             <p className="text-3xl font-bold text-primary">{activeAccounts.length}</p>
           </div>
           <div className="px-6 py-5">
-            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">Total cuentas</p>
+            <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-2">{t("totalAccounts")}</p>
             <p className="text-3xl font-bold">{accounts.length}</p>
           </div>
         </div>
@@ -132,14 +136,14 @@ export function AccountList({ initialAccounts }: AccountListProps) {
             <Wallet className="size-5 text-muted-foreground" />
           </div>
           <div>
-            <p className="font-semibold">Todas las Cuentas</p>
-            <p className="text-xs text-muted-foreground">{accounts.length} cuentas registradas</p>
+            <p className="font-semibold">{t("allAccounts")}</p>
+            <p className="text-xs text-muted-foreground">{t("countRegistered", { count: accounts.length })}</p>
           </div>
         </div>
 
         {accounts.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-16">
-            No tienes cuentas. Agrega una para empezar.
+            {t("noAccounts")}
           </p>
         ) : (
           <div className="divide-y">
@@ -160,7 +164,7 @@ export function AccountList({ initialAccounts }: AccountListProps) {
                       </Badge>
                       {account.is_active && (
                         <Badge className="text-xs h-5 bg-green-600/10 text-green-600 border-green-600/20 dark:bg-green-500/10 dark:text-green-400">
-                          Activa
+                          {t("active")}
                         </Badge>
                       )}
                     </div>
@@ -184,7 +188,7 @@ export function AccountList({ initialAccounts }: AccountListProps) {
                     variant="ghost"
                     className="size-8 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={() => setEditingAccount(account)}
-                    title="Editar cuenta"
+                    title={t("editAccount")}
                   >
                     <Pencil className="size-4" />
                   </Button>
@@ -195,7 +199,7 @@ export function AccountList({ initialAccounts }: AccountListProps) {
                     className="size-8 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={() => handleRecalculate(account.id)}
                     disabled={syncing.has(account.id)}
-                    title="Sincronizar balance desde transacciones"
+                    title={t("syncBalance")}
                   >
                     <RefreshCw className={`size-4 ${syncing.has(account.id) ? "animate-spin" : ""}`} />
                   </Button>
@@ -218,8 +222,8 @@ export function AccountList({ initialAccounts }: AccountListProps) {
       <Dialog open={openForm} onOpenChange={setOpenForm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nueva cuenta</DialogTitle>
-            <DialogDescription>Configura el nombre, tipo y saldo inicial de la cuenta.</DialogDescription>
+            <DialogTitle>{t("dialogTitleNew")}</DialogTitle>
+            <DialogDescription>{t("dialogDescNew")}</DialogDescription>
           </DialogHeader>
           <AccountForm
             onSuccess={handleCreated}
@@ -231,8 +235,8 @@ export function AccountList({ initialAccounts }: AccountListProps) {
       <Dialog open={Boolean(editingAccount)} onOpenChange={(open) => { if (!open) setEditingAccount(null) }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar cuenta</DialogTitle>
-            <DialogDescription>Actualiza el nombre, tipo o estado de la cuenta.</DialogDescription>
+            <DialogTitle>{t("dialogTitleEdit")}</DialogTitle>
+            <DialogDescription>{t("dialogDescEdit")}</DialogDescription>
           </DialogHeader>
           {editingAccount && (
             <AccountForm

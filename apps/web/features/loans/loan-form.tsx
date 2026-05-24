@@ -8,6 +8,7 @@ import { Button } from "@workspace/ui/components/button"
 import { DatePicker } from "@workspace/ui/components/date-picker"
 import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
+import { useTranslations } from "next-intl"
 import { loanApi } from "./api"
 import type { Loan, LoanCreate } from "./types"
 
@@ -18,6 +19,8 @@ interface LoanFormProps {
 
 export function LoanForm({ onSuccess, onCancel }: LoanFormProps) {
   const { data: session } = useSession()
+  const t = useTranslations("loans")
+  const tCommon = useTranslations("common")
 
   const form = useForm({
     defaultValues: {
@@ -45,15 +48,15 @@ export function LoanForm({ onSuccess, onCancel }: LoanFormProps) {
           payment_day: Number(value.payment_day),
         }
         const loan = await loanApi.create(payload, session?.accessToken ?? "")
-        toast.success("Préstamo creado exitosamente")
+        toast.success(t("loanCreated"))
         onSuccess(loan)
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Error al crear el préstamo")
+        toast.error(err instanceof Error ? err.message : t("errorCreating"))
       }
     },
   })
 
-  const required = (value: string) => !value.trim() ? "Campo requerido" : undefined
+  const required = (value: string) => !value.trim() ? t("fieldRequired") : undefined
 
   return (
     <form
@@ -66,10 +69,10 @@ export function LoanForm({ onSuccess, onCancel }: LoanFormProps) {
         <form.Field name="name" validators={{ onSubmit: ({ value }) => required(value) }}>
           {(field) => (
             <Field>
-              <FieldLabel htmlFor="name">Nombre del préstamo</FieldLabel>
+              <FieldLabel htmlFor="name">{t("loanName")}</FieldLabel>
               <Input
                 id="name"
-                placeholder="Ej: Crédito automotriz"
+                placeholder={t("loanNamePlaceholder")}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
@@ -84,10 +87,10 @@ export function LoanForm({ onSuccess, onCancel }: LoanFormProps) {
         <form.Field name="lender" validators={{ onSubmit: ({ value }) => required(value) }}>
           {(field) => (
             <Field>
-              <FieldLabel htmlFor="lender">Prestamista</FieldLabel>
+              <FieldLabel htmlFor="lender">{t("lender")}</FieldLabel>
               <Input
                 id="lender"
-                placeholder="Ej: BBVA"
+                placeholder={t("lenderPlaceholder")}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
@@ -103,7 +106,7 @@ export function LoanForm({ onSuccess, onCancel }: LoanFormProps) {
           <form.Field name="principal">
             {(field) => (
               <Field>
-                <FieldLabel htmlFor="principal">Capital original</FieldLabel>
+                <FieldLabel htmlFor="principal">{t("originalPrincipal")}</FieldLabel>
                 <Input id="principal" type="number" step="0.01" placeholder="0.00"
                   value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} />
               </Field>
@@ -113,7 +116,7 @@ export function LoanForm({ onSuccess, onCancel }: LoanFormProps) {
           <form.Field name="balance">
             {(field) => (
               <Field>
-                <FieldLabel htmlFor="balance">Saldo actual</FieldLabel>
+                <FieldLabel htmlFor="balance">{t("currentBalance")}</FieldLabel>
                 <Input id="balance" type="number" step="0.01" placeholder="0.00"
                   value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} />
               </Field>
@@ -123,7 +126,7 @@ export function LoanForm({ onSuccess, onCancel }: LoanFormProps) {
           <form.Field name="interest_rate">
             {(field) => (
               <Field>
-                <FieldLabel htmlFor="interest_rate">Tasa de interés (%)</FieldLabel>
+                <FieldLabel htmlFor="interest_rate">{t("interestRate")}</FieldLabel>
                 <Input id="interest_rate" type="number" step="0.01" placeholder="0.00"
                   value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} />
               </Field>
@@ -133,7 +136,7 @@ export function LoanForm({ onSuccess, onCancel }: LoanFormProps) {
           <form.Field name="monthly_payment">
             {(field) => (
               <Field>
-                <FieldLabel htmlFor="monthly_payment">Pago mensual</FieldLabel>
+                <FieldLabel htmlFor="monthly_payment">{t("monthlyPayment")}</FieldLabel>
                 <Input id="monthly_payment" type="number" step="0.01" placeholder="0.00"
                   value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} />
               </Field>
@@ -143,7 +146,7 @@ export function LoanForm({ onSuccess, onCancel }: LoanFormProps) {
           <form.Field name="start_date">
             {(field) => (
               <Field>
-                <FieldLabel>Fecha inicio</FieldLabel>
+                <FieldLabel>{t("startDate")}</FieldLabel>
                 <DatePicker value={field.state.value ?? ""} onChange={field.handleChange} />
               </Field>
             )}
@@ -152,7 +155,7 @@ export function LoanForm({ onSuccess, onCancel }: LoanFormProps) {
           <form.Field name="end_date">
             {(field) => (
               <Field>
-                <FieldLabel>Fecha fin</FieldLabel>
+                <FieldLabel>{t("endDate")}</FieldLabel>
                 <DatePicker value={field.state.value ?? ""} onChange={field.handleChange} />
               </Field>
             )}
@@ -161,7 +164,7 @@ export function LoanForm({ onSuccess, onCancel }: LoanFormProps) {
           <form.Field name="payment_day">
             {(field) => (
               <Field>
-                <FieldLabel htmlFor="payment_day">Día de pago</FieldLabel>
+                <FieldLabel htmlFor="payment_day">{t("paymentDayField")}</FieldLabel>
                 <Input id="payment_day" type="number" min="1" max="31" placeholder="1"
                   value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} />
               </Field>
@@ -171,12 +174,12 @@ export function LoanForm({ onSuccess, onCancel }: LoanFormProps) {
 
         <div className="flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
+            {tCommon("cancel")}
           </Button>
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creando…" : "Crear préstamo"}
+                {isSubmitting ? t("creating") : t("createLoan")}
               </Button>
             )}
           </form.Subscribe>

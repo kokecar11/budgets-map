@@ -16,9 +16,15 @@ import {
   DialogTitle,
 } from "@workspace/ui/components/dialog"
 import { apiFetch } from "@/lib/api"
+import { useLocale, useTranslations } from "next-intl"
+import { LOCALE_TAG } from "@/lib/dates"
+import type { Locale } from "@/i18n/routing"
 
 export default function SettingsAccountPage() {
   const { data: session } = useSession()
+  const locale = useLocale() as Locale
+  const t = useTranslations("settings")
+  const tCommon = useTranslations("common")
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const [deleting, setDeleting] = useState(false)
@@ -38,23 +44,23 @@ export default function SettingsAccountPage() {
         method: "DELETE",
         token: session.accessToken,
       })
-      toast.success("Cuenta eliminada")
+      toast.success(t("accountDeleted"))
       await signOut({ callbackUrl: "/login" })
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error al eliminar la cuenta")
+      toast.error(err instanceof Error ? err.message : t("errorDeletingAccount"))
       setDeleting(false)
     }
   }
 
-  const loginDate = new Date().toLocaleDateString("es-MX", {
+  const loginDate = new Date().toLocaleDateString(LOCALE_TAG[locale], {
     day: "numeric", month: "long", year: "numeric",
   })
 
   return (
     <>
-      {/* ── Sesión activa ── */}
+      {/* ── Active session ── */}
       <div>
-        <h2 className="text-base font-semibold mb-4">Sesión activa</h2>
+        <h2 className="text-base font-semibold mb-4">{t("activeSession")}</h2>
         <div className="rounded-xl border bg-card overflow-hidden divide-y">
           <div className="flex items-center justify-between px-6 py-4 gap-4">
             <div className="flex items-center gap-4">
@@ -62,45 +68,45 @@ export default function SettingsAccountPage() {
                 <Monitor className="size-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-sm font-medium">Este dispositivo</p>
+                <p className="text-sm font-medium">{t("thisDevice")}</p>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <Clock className="size-3 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">Sesión iniciada el {loginDate}</p>
+                  <p className="text-xs text-muted-foreground">{t("sessionStarted", { date: loginDate })}</p>
                 </div>
               </div>
             </div>
             <span className="text-xs font-medium text-green-600 dark:text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full">
-              Activa
+              {t("sessionActive")}
             </span>
           </div>
         </div>
       </div>
 
-      {/* ── Cerrar sesión ── */}
+      {/* ── Sign out ── */}
       <div>
-        <h2 className="text-base font-semibold mb-4">Cerrar sesión</h2>
+        <h2 className="text-base font-semibold mb-4">{t("signOutTitle")}</h2>
         <div className="rounded-xl border bg-card px-6 py-5 flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-medium">Cerrar sesión en este dispositivo</p>
+            <p className="text-sm font-medium">{t("signOutDevice")}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Sesión de <span className="font-medium">{session?.user?.email}</span>
+              {t("sessionOf")} <span className="font-medium">{session?.user?.email}</span>
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={handleSignOut}>
             <LogOut className="size-4" />
-            Cerrar sesión
+            {t("signOutTitle")}
           </Button>
         </div>
       </div>
 
-      {/* ── Zona de peligro ── */}
+      {/* ── Danger zone ── */}
       <div>
-        <h2 className="text-base font-semibold mb-4 text-destructive">Zona de peligro</h2>
+        <h2 className="text-base font-semibold mb-4 text-destructive">{t("dangerZone")}</h2>
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-6 py-5 flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-medium">Eliminar cuenta</p>
+            <p className="text-sm font-medium">{t("deleteAccountLabel")}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Acción permanente. Se borrarán todos tus datos y no podrás recuperarlos.
+              {t("deleteAccountDesc")}
             </p>
           </div>
           <Button
@@ -109,7 +115,7 @@ export default function SettingsAccountPage() {
             onClick={() => { setConfirmEmail(""); setShowDeleteDialog(true) }}
           >
             <Trash2 className="size-4" />
-            Eliminar
+            {t("deleteBtn")}
           </Button>
         </div>
       </div>
@@ -118,16 +124,15 @@ export default function SettingsAccountPage() {
       <Dialog open={showDeleteDialog} onOpenChange={(open) => { if (!deleting) { setShowDeleteDialog(open); setConfirmEmail("") } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>¿Eliminar cuenta?</DialogTitle>
+            <DialogTitle>{t("deleteDialogTitle")}</DialogTitle>
             <DialogDescription>
-              Esta acción es <strong>permanente e irreversible</strong>. Se eliminarán todas tus
-              transacciones, cuentas, presupuestos y demás datos asociados a tu cuenta.
+              {t("deleteDialogDesc")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-2">
             <p className="text-sm text-muted-foreground">
-              Escribe <span className="font-medium text-foreground">{session?.user?.email}</span> para confirmar:
+              {t("deleteConfirmPrompt", { email: session?.user?.email ?? "" })}
             </p>
             <Input
               placeholder={session?.user?.email ?? ""}
@@ -140,14 +145,14 @@ export default function SettingsAccountPage() {
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={deleting}>
-              Cancelar
+              {tCommon("cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDeleteAccount}
               disabled={deleting || !emailMatches}
             >
-              {deleting ? "Eliminando…" : "Eliminar mi cuenta"}
+              {deleting ? t("deletingAccount") : t("deleteAccountBtn")}
             </Button>
           </DialogFooter>
         </DialogContent>

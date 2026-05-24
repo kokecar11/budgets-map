@@ -10,6 +10,7 @@ import { Input } from "@workspace/ui/components/input"
 import { SearchSelect } from "@workspace/ui/components/search-select"
 
 import { DatePicker } from "@workspace/ui/components/date-picker"
+import { useTranslations } from "next-intl"
 import { creditCardTransactionApi } from "./api"
 import { AmortizationTable } from "./amortization-table"
 import type { CreditCardTransaction } from "./types"
@@ -24,6 +25,8 @@ interface CreditCardChargeFormProps {
 
 export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCancel }: CreditCardChargeFormProps) {
   const { data: session } = useSession()
+  const t = useTranslations("creditCards")
+  const tCommon = useTranslations("common")
   const expenseCategories = categories.filter((c) => c.type === "expense")
 
   const form = useForm({
@@ -52,10 +55,10 @@ export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCa
           },
           token
         )
-        toast.success("Cargo registrado exitosamente")
+        toast.success(t("chargeRegistered"))
         onSuccess(charge)
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Error al registrar el cargo")
+        toast.error(err instanceof Error ? err.message : t("errorRegisteringCharge"))
       }
     },
   })
@@ -70,14 +73,14 @@ export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCa
       <FieldGroup>
         <form.Field
           name="description"
-          validators={{ onSubmit: ({ value }) => !value.trim() ? "La descripción es requerida" : undefined }}
+          validators={{ onSubmit: ({ value }) => !value.trim() ? t("descriptionRequired") : undefined }}
         >
           {(field) => (
             <Field>
-              <FieldLabel htmlFor="description">Descripción</FieldLabel>
+              <FieldLabel htmlFor="description">{t("descriptionField")}</FieldLabel>
               <Input
                 id="description"
-                placeholder="Ej: Supermercado"
+                placeholder={t("descriptionPlaceholder")}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
@@ -91,11 +94,11 @@ export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCa
 
         <form.Field
           name="amount"
-          validators={{ onSubmit: ({ value }) => !value || Number(value) <= 0 ? "El monto debe ser mayor a 0" : undefined }}
+          validators={{ onSubmit: ({ value }) => !value || Number(value) <= 0 ? t("chargeAmountRequired") : undefined }}
         >
           {(field) => (
             <Field>
-              <FieldLabel htmlFor="amount">Monto del cargo</FieldLabel>
+              <FieldLabel htmlFor="amount">{t("chargeAmountLabel")}</FieldLabel>
               <Input
                 id="amount"
                 type="number"
@@ -115,7 +118,7 @@ export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCa
         <form.Field name="date">
           {(field) => (
             <Field>
-              <FieldLabel>Fecha</FieldLabel>
+              <FieldLabel>{t("dateField")}</FieldLabel>
               <DatePicker
                 value={field.state.value ?? ""}
                 onChange={field.handleChange}
@@ -126,17 +129,17 @@ export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCa
 
         <form.Field
           name="category_id"
-          validators={{ onSubmit: ({ value }) => !value ? "Selecciona una categoría" : undefined }}
+          validators={{ onSubmit: ({ value }) => !value ? t("categoryRequired") : undefined }}
         >
           {(field) => (
             <Field>
-              <FieldLabel>Categoría</FieldLabel>
+              <FieldLabel>{t("categoryField")}</FieldLabel>
               <SearchSelect
                 value={field.state.value}
                 onValueChange={(v) => field.handleChange(v)}
                 options={expenseCategories.map((c) => ({ value: c.id, label: `${c.icon ? `${c.icon} ` : ""}${c.name}` }))}
-                placeholder="Seleccionar categoría"
-                searchPlaceholder="Buscar categoría..."
+                placeholder={t("selectCategory")}
+                searchPlaceholder={t("searchCategory")}
               />
               {field.state.meta.errors.length > 0 && (
                 <p className="text-destructive text-sm">{field.state.meta.errors[0]}</p>
@@ -150,7 +153,7 @@ export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCa
           <form.Field name="installments">
             {(field) => (
               <Field>
-                <FieldLabel htmlFor="installments">Cuotas / Meses</FieldLabel>
+                <FieldLabel htmlFor="installments">{t("installmentsField")}</FieldLabel>
                 <Input
                   id="installments"
                   type="number"
@@ -167,7 +170,7 @@ export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCa
             {(field) => (
               <Field>
                 <FieldLabel htmlFor="interest_rate">
-                  Tasa E.A. (%)
+                  {t("interestRateEA")}
                 </FieldLabel>
                 <Input
                   id="interest_rate"
@@ -178,7 +181,7 @@ export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCa
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">Efectiva Anual · 0% = sin intereses</p>
+                <p className="text-xs text-muted-foreground">{t("interestRateHint")}</p>
               </Field>
             )}
           </form.Field>
@@ -198,7 +201,7 @@ export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCa
             return (
               <div className="flex flex-col gap-1.5">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Tabla de amortización
+                  {t("amortizationTableLabel")}
                 </p>
                 <AmortizationTable
                   principal={a}
@@ -213,12 +216,12 @@ export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCa
 
         <div className="flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
+            {tCommon("cancel")}
           </Button>
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Registrando…" : "Registrar cargo"}
+                {isSubmitting ? t("registering") : t("registerCharge")}
               </Button>
             )}
           </form.Subscribe>

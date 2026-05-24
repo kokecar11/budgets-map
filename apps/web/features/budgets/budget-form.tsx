@@ -18,23 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select"
+import { useTranslations } from "next-intl"
 import { budgetApi } from "./api"
 import type { Budget, BudgetCreate } from "./types"
-
-const MONTHS = [
-  { value: "1", label: "Enero" },
-  { value: "2", label: "Febrero" },
-  { value: "3", label: "Marzo" },
-  { value: "4", label: "Abril" },
-  { value: "5", label: "Mayo" },
-  { value: "6", label: "Junio" },
-  { value: "7", label: "Julio" },
-  { value: "8", label: "Agosto" },
-  { value: "9", label: "Septiembre" },
-  { value: "10", label: "Octubre" },
-  { value: "11", label: "Noviembre" },
-  { value: "12", label: "Diciembre" },
-]
 
 const currentYear = new Date().getFullYear()
 const YEARS = [currentYear - 1, currentYear, currentYear + 1]
@@ -46,6 +32,13 @@ interface BudgetFormProps {
 
 export function BudgetForm({ onSuccess, onCancel }: BudgetFormProps) {
   const { data: session } = useSession()
+  const t = useTranslations("budgets")
+  const tCommon = useTranslations("common")
+
+  const MONTHS = Array.from({ length: 12 }, (_, i) => ({
+    value: String(i + 1),
+    label: t(`months.${i + 1}`),
+  }))
 
   const form = useForm({
     defaultValues: {
@@ -63,10 +56,10 @@ export function BudgetForm({ onSuccess, onCancel }: BudgetFormProps) {
           description: value.description || undefined,
         }
         const budget = await budgetApi.create(payload, session?.accessToken ?? "")
-        toast.success("Presupuesto creado exitosamente")
+        toast.success(t("budgetCreated"))
         onSuccess(budget)
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Error al crear el presupuesto")
+        toast.error(err instanceof Error ? err.message : t("errorCreating"))
       }
     },
   })
@@ -83,16 +76,16 @@ export function BudgetForm({ onSuccess, onCancel }: BudgetFormProps) {
           name="name"
           validators={{
             onSubmit: ({ value }) => {
-              if (!value.trim()) return "El nombre es requerido"
+              if (!value.trim()) return t("nameRequired")
             },
           }}
         >
           {(field) => (
             <Field>
-              <FieldLabel htmlFor="name">Nombre</FieldLabel>
+              <FieldLabel htmlFor="name">{t("name")}</FieldLabel>
               <Input
                 id="name"
-                placeholder="Ej: Presupuesto Marzo 2026"
+                placeholder={t("namePlaceholder")}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
@@ -109,16 +102,16 @@ export function BudgetForm({ onSuccess, onCancel }: BudgetFormProps) {
             name="month"
             validators={{
               onSubmit: ({ value }) => {
-                if (!value) return "Selecciona un mes"
+                if (!value) return t("monthRequired")
               },
             }}
           >
             {(field) => (
               <Field>
-                <FieldLabel>Mes</FieldLabel>
+                <FieldLabel>{t("month")}</FieldLabel>
                 <Select value={field.state.value} onValueChange={(v) => field.handleChange(v)}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleccionar mes" />
+                    <SelectValue placeholder={t("selectMonth")} />
                   </SelectTrigger>
                   <SelectContent>
                     {MONTHS.map((m) => (
@@ -137,16 +130,16 @@ export function BudgetForm({ onSuccess, onCancel }: BudgetFormProps) {
             name="year"
             validators={{
               onSubmit: ({ value }) => {
-                if (!value) return "Selecciona un año"
+                if (!value) return t("yearRequired")
               },
             }}
           >
             {(field) => (
               <Field>
-                <FieldLabel>Año</FieldLabel>
+                <FieldLabel>{t("year")}</FieldLabel>
                 <Select value={field.state.value} onValueChange={(v) => field.handleChange(v)}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleccionar año" />
+                    <SelectValue placeholder={t("selectYear")} />
                   </SelectTrigger>
                   <SelectContent>
                     {YEARS.map((y) => (
@@ -165,10 +158,10 @@ export function BudgetForm({ onSuccess, onCancel }: BudgetFormProps) {
         <form.Field name="description">
           {(field) => (
             <Field>
-              <FieldLabel htmlFor="description">Descripción <span className="text-muted-foreground">(opcional)</span></FieldLabel>
+              <FieldLabel htmlFor="description">{t("description")} <span className="text-muted-foreground">{tCommon("optional")}</span></FieldLabel>
               <Input
                 id="description"
-                placeholder="Ej: Gastos del mes de marzo"
+                placeholder={t("descriptionPlaceholder")}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
@@ -179,12 +172,12 @@ export function BudgetForm({ onSuccess, onCancel }: BudgetFormProps) {
 
         <div className="flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
+            {tCommon("cancel")}
           </Button>
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creando…" : "Crear presupuesto"}
+                {isSubmitting ? t("creating") : t("createBudget")}
               </Button>
             )}
           </form.Subscribe>

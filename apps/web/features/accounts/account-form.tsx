@@ -17,12 +17,7 @@ import {
 import { Switch } from "@workspace/ui/components/switch"
 import { accountApi } from "./api"
 import type { Account, AccountCreate, AccountUpdate } from "./types"
-
-const ACCOUNT_TYPES = [
-  { value: "bank", label: "Banco" },
-  { value: "cash", label: "Efectivo" },
-  { value: "digital_wallet", label: "Cartera digital" },
-]
+import { useTranslations } from "next-intl"
 
 interface AccountFormProps {
   onSuccess: (account: Account) => void
@@ -32,7 +27,14 @@ interface AccountFormProps {
 
 export function AccountForm({ onSuccess, onCancel, initialValues }: AccountFormProps) {
   const { data: session } = useSession()
+  const t = useTranslations("accounts")
   const isEdit = Boolean(initialValues)
+
+  const ACCOUNT_TYPES = [
+    { value: "bank", label: t("typeBank") },
+    { value: "cash", label: t("typeCash") },
+    { value: "digital_wallet", label: t("typeDigitalWallet") },
+  ]
 
   const form = useForm({
     defaultValues: {
@@ -52,7 +54,7 @@ export function AccountForm({ onSuccess, onCancel, initialValues }: AccountFormP
             is_active: value.is_active,
           }
           account = await accountApi.update(initialValues.id, payload, token)
-          toast.success("Cuenta actualizada")
+          toast.success(t("updated"))
         } else {
           const payload: AccountCreate = {
             name: value.name,
@@ -60,11 +62,11 @@ export function AccountForm({ onSuccess, onCancel, initialValues }: AccountFormP
             balance: Number(value.balance),
           }
           account = await accountApi.create(payload, token)
-          toast.success("Cuenta creada exitosamente")
+          toast.success(t("created"))
         }
         onSuccess(account)
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Error al guardar la cuenta")
+        toast.error(err instanceof Error ? err.message : t("errorSaving"))
       }
     },
   })
@@ -81,12 +83,12 @@ export function AccountForm({ onSuccess, onCancel, initialValues }: AccountFormP
           name="name"
           validators={{
             onSubmit: ({ value }) =>
-              !value.trim() ? "El nombre es requerido" : undefined,
+              !value.trim() ? t("nameRequired") : undefined,
           }}
         >
           {(field) => (
             <Field>
-              <FieldLabel htmlFor="name">Nombre</FieldLabel>
+              <FieldLabel htmlFor="name">{t("name")}</FieldLabel>
               <Input
                 id="name"
                 placeholder="Ej: BBVA Nómina"
@@ -106,7 +108,7 @@ export function AccountForm({ onSuccess, onCancel, initialValues }: AccountFormP
         <form.Field name="type">
           {(field) => (
             <Field>
-              <FieldLabel>Tipo</FieldLabel>
+              <FieldLabel>{t("type")}</FieldLabel>
               <Select
                 value={field.state.value}
                 onValueChange={(v) => field.handleChange(v as AccountCreate["type"])}
@@ -128,7 +130,7 @@ export function AccountForm({ onSuccess, onCancel, initialValues }: AccountFormP
           <form.Field name="balance">
             {(field) => (
               <Field>
-                <FieldLabel htmlFor="balance">Saldo inicial</FieldLabel>
+                <FieldLabel htmlFor="balance">{t("initialBalance")}</FieldLabel>
                 <Input
                   id="balance"
                   type="number"
@@ -148,7 +150,7 @@ export function AccountForm({ onSuccess, onCancel, initialValues }: AccountFormP
             {(field) => (
               <Field>
                 <div className="flex items-center justify-between">
-                  <FieldLabel htmlFor="is_active">Cuenta activa</FieldLabel>
+                  <FieldLabel htmlFor="is_active">{t("isActive")}</FieldLabel>
                   <Switch
                     id="is_active"
                     checked={field.state.value}
@@ -162,12 +164,12 @@ export function AccountForm({ onSuccess, onCancel, initialValues }: AccountFormP
 
         <div className="flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
+            {t("cancel")}
           </Button>
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Guardando…" : isEdit ? "Guardar cambios" : "Crear cuenta"}
+                {isSubmitting ? t("saving") : isEdit ? t("saveChanges") : t("createAccount")}
               </Button>
             )}
           </form.Subscribe>

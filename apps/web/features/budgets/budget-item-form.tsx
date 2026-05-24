@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select"
+import { useTranslations } from "next-intl"
 import { budgetItemApi } from "./api"
 import type { BudgetItem, BudgetItemCreate } from "./types"
 import type { Category } from "@/features/categories/types"
@@ -31,6 +32,8 @@ interface BudgetItemFormProps {
 
 export function BudgetItemForm({ budgetId, categories, onSuccess, onCancel }: BudgetItemFormProps) {
   const { data: session } = useSession()
+  const t = useTranslations("budgets")
+  const tCommon = useTranslations("common")
 
   const form = useForm({
     defaultValues: {
@@ -46,10 +49,10 @@ export function BudgetItemForm({ budgetId, categories, onSuccess, onCancel }: Bu
           category_id: value.category_id || undefined,
         }
         const item = await budgetItemApi.create(budgetId, payload, session?.accessToken ?? "")
-        toast.success("Ítem agregado exitosamente")
+        toast.success(t("itemAdded"))
         onSuccess(item)
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Error al agregar el ítem")
+        toast.error(err instanceof Error ? err.message : t("errorAddingItem"))
       }
     },
   })
@@ -66,16 +69,16 @@ export function BudgetItemForm({ budgetId, categories, onSuccess, onCancel }: Bu
           name="description"
           validators={{
             onSubmit: ({ value }) => {
-              if (!value.trim()) return "La descripción es requerida"
+              if (!value.trim()) return t("descriptionRequired")
             },
           }}
         >
           {(field) => (
             <Field>
-              <FieldLabel htmlFor="description">Descripción</FieldLabel>
+              <FieldLabel htmlFor="description">{t("itemDescription")}</FieldLabel>
               <Input
                 id="description"
-                placeholder="Ej: Arriendo, Mercado, Netflix…"
+                placeholder={t("itemDescPlaceholder")}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
@@ -91,14 +94,14 @@ export function BudgetItemForm({ budgetId, categories, onSuccess, onCancel }: Bu
           name="planned_amount"
           validators={{
             onSubmit: ({ value }) => {
-              if (!value) return "El monto es requerido"
-              if (isNaN(Number(value)) || Number(value) <= 0) return "Ingresa un monto válido"
+              if (!value) return t("amountRequired")
+              if (isNaN(Number(value)) || Number(value) <= 0) return t("invalidAmount")
             },
           }}
         >
           {(field) => (
             <Field>
-              <FieldLabel htmlFor="planned_amount">Monto planeado</FieldLabel>
+              <FieldLabel htmlFor="planned_amount">{t("plannedAmount")}</FieldLabel>
               <Input
                 id="planned_amount"
                 type="number"
@@ -120,16 +123,16 @@ export function BudgetItemForm({ budgetId, categories, onSuccess, onCancel }: Bu
           <form.Field name="category_id">
             {(field) => (
               <Field>
-                <FieldLabel htmlFor="category_id">Categoría <span className="text-muted-foreground font-normal">(opcional)</span></FieldLabel>
+                <FieldLabel htmlFor="category_id">{t("category")} <span className="text-muted-foreground font-normal">{tCommon("optional")}</span></FieldLabel>
                 <Select
                   value={field.state.value}
                   onValueChange={(v) => field.handleChange(v === "__none__" ? "" : v)}
                 >
                   <SelectTrigger id="category_id">
-                    <SelectValue placeholder="Sin categoría" />
+                    <SelectValue placeholder={t("noCategory")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__">Sin categoría</SelectItem>
+                    <SelectItem value="__none__">{t("noCategory")}</SelectItem>
                     {categories.map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
@@ -142,12 +145,12 @@ export function BudgetItemForm({ budgetId, categories, onSuccess, onCancel }: Bu
 
         <div className="flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
+            {tCommon("cancel")}
           </Button>
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Agregando…" : "Agregar ítem"}
+                {isSubmitting ? t("adding") : t("addItemBtn")}
               </Button>
             )}
           </form.Subscribe>

@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@workspace/ui/components/dialog"
 
+import { useTranslations } from "next-intl"
 import { BudgetItemForm } from "./budget-item-form"
 import { LinkTransactionDialog } from "./link-transaction-dialog"
 import { budgetItemApi } from "./api"
@@ -34,6 +35,8 @@ interface BudgetItemsListProps {
 export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, categories, transactions, budget }: BudgetItemsListProps) {
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]))
   const { data: session } = useSession()
+  const t = useTranslations("budgets")
+  const tCommon = useTranslations("common")
   const [items, setItems] = useState<BudgetItem[]>(initialItems)
   const [openForm, setOpenForm] = useState(false)
   const [copying, setCopying] = useState(false)
@@ -51,15 +54,15 @@ export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, cate
     try {
       await budgetItemApi.delete(id, session?.accessToken ?? "")
       setItems((prev) => prev.filter((i) => i.id !== id))
-      toast.success("Ítem eliminado")
+      toast.success(t("itemDeleted"))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error al eliminar el ítem")
+      toast.error(err instanceof Error ? err.message : t("errorDeletingItem"))
     }
   }
 
   async function handleCopyFromPrevious() {
     if (!previousBudgetId) return
-    if (items.length > 0 && !window.confirm("Ya tienes ítems. ¿Deseas agregar también los del mes anterior?")) return
+    if (items.length > 0 && !window.confirm(t("confirmCopy"))) return
     setCopying(true)
     try {
       const token = session?.accessToken ?? ""
@@ -79,9 +82,9 @@ export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, cate
         )
       )
       setItems((prev) => [...prev, ...created])
-      toast.success("Ítems del mes anterior copiados")
+      toast.success(t("itemsCopied"))
     } catch {
-      toast.error("Error al copiar los ítems")
+      toast.error(t("errorCopying"))
     } finally {
       setCopying(false)
     }
@@ -104,9 +107,9 @@ export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, cate
         session?.accessToken ?? ""
       )
       setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
-      toast.success(transactionId ? "Transacción vinculada" : "Transacción desvinculada")
+      toast.success(transactionId ? t("transactionLinked") : t("transactionUnlinked"))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error al vincular la transacción")
+      toast.error(err instanceof Error ? err.message : t("errorLinking"))
       throw err
     }
   }
@@ -115,9 +118,9 @@ export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, cate
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-0.5">
-          <h3 className="font-medium">Ítems del presupuesto</h3>
+          <h3 className="font-medium">{t("budgetItems")}</h3>
           <span className="text-muted-foreground text-sm">
-            Pagado: <strong>{paid.toLocaleString()}</strong> / Total:{" "}
+            {t("paid")}: <strong>{paid.toLocaleString()}</strong> / {tCommon("total")}:{" "}
             <strong>{total.toLocaleString()}</strong>
           </span>
         </div>
@@ -130,19 +133,19 @@ export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, cate
               disabled={copying}
             >
               <Copy className="size-4" />
-              {copying ? "Copiando…" : "Copiar mes anterior"}
+              {copying ? t("copying") : t("copyPrevious")}
             </Button>
           )}
           <Button size="sm" onClick={() => setOpenForm(true)}>
             <Plus className="size-4" />
-            Agregar ítem
+            {t("addItem")}
           </Button>
         </div>
       </div>
 
       {items.length === 0 ? (
         <p className="text-muted-foreground text-sm text-center py-8">
-          Sin ítems aún. Agrega uno para empezar.
+          {t("noItems")}
         </p>
       ) : (
         <div className="flex flex-col gap-2">
@@ -169,7 +172,7 @@ export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, cate
                     )}
                     {item.actual_amount != null && (
                       <p className="text-xs text-muted-foreground">
-                        Real: <strong>{item.actual_amount.toLocaleString()}</strong>
+                        {t("real")}: <strong>{item.actual_amount.toLocaleString()}</strong>
                         {item.difference != null && (
                           <span className={item.difference >= 0 ? " text-green-600" : " text-red-600"}>
                             {" "}({item.difference >= 0 ? "+" : ""}{item.difference.toLocaleString()})
@@ -207,8 +210,8 @@ export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, cate
       <Dialog open={openForm} onOpenChange={setOpenForm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nuevo ítem</DialogTitle>
-            <DialogDescription>Agrega un gasto planificado a este presupuesto.</DialogDescription>
+            <DialogTitle>{t("dialogTitleNewItem")}</DialogTitle>
+            <DialogDescription>{t("dialogDescNewItem")}</DialogDescription>
           </DialogHeader>
           <BudgetItemForm
             budgetId={budgetId}

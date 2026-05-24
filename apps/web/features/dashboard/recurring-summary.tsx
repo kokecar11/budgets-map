@@ -2,9 +2,11 @@
 
 import { useMemo } from "react"
 import { RefreshCw, CheckCircle2, Clock } from "lucide-react"
+import { useTranslations } from "next-intl"
 import type { Transaction } from "@/features/transactions/types"
 import type { Category } from "@/features/categories/types"
 import { parseDateParts } from "@/lib/dates"
+import { useCurrency } from "@/hooks/use-currency"
 
 interface RecurringItem {
   key: string
@@ -22,15 +24,7 @@ interface RecurringSummaryProps {
   currentYear: number
 }
 
-const TYPE_LABELS: Record<Transaction["type"], string> = {
-  income: "Ingreso",
-  expense: "Gasto",
-  transfer: "Transferencia",
-  saving: "Ahorro",
-}
-
-const fmt = (n: number) =>
-  `$ ${n.toLocaleString("es-MX", { minimumFractionDigits: 0 })}`
+// TYPE_LABELS are now handled via useTranslations("dashboard") in the component
 
 export function RecurringSummary({
   transactions,
@@ -38,6 +32,15 @@ export function RecurringSummary({
   currentMonth,
   currentYear,
 }: RecurringSummaryProps) {
+  const t = useTranslations("dashboard")
+  const fmt = useCurrency()
+
+  const TYPE_LABELS: Record<Transaction["type"], string> = {
+    income: t("typeIncome"),
+    expense: t("typeExpense"),
+    transfer: t("typeTransfer"),
+    saving: t("typeSaving"),
+  }
   const categoryMap = useMemo(
     () => Object.fromEntries(categories.map((c) => [c.id, c.name])),
     [categories]
@@ -66,12 +69,12 @@ export function RecurringSummary({
     }
 
     return Array.from(templateMap.entries())
-      .map(([key, t]) => ({
+      .map(([key, tx]) => ({
         key,
-        description: t.description ?? "Sin descripción",
-        type: t.type,
-        amount: t.amount,
-        categoryName: t.category_id ? (categoryMap[t.category_id] ?? null) : null,
+        description: tx.description ?? "",
+        type: tx.type,
+        amount: tx.amount,
+        categoryName: tx.category_id ? (categoryMap[tx.category_id] ?? null) : null,
         occurredThisMonth: occurredKeys.has(key),
       }))
       .sort((a, b) => {
@@ -95,10 +98,11 @@ export function RecurringSummary({
             <RefreshCw className="size-5 text-muted-foreground" />
           </div>
           <div>
-            <p className="font-semibold">Recurrentes del mes</p>
+            <p className="font-semibold">{t("recurringTitle")}</p>
             <p className="text-xs text-muted-foreground">
-              {occurred.length} ejecutados · {pending.length} pendientes
-              {totalPending > 0 && ` · ${fmt(totalPending)} por salir`}
+              {totalPending > 0
+                ? t("recurringWithAmount", { executed: occurred.length, pending: pending.length, amount: fmt(totalPending) })
+                : t("recurringSubtitle", { executed: occurred.length, pending: pending.length })}
             </p>
           </div>
         </div>
@@ -114,7 +118,7 @@ export function RecurringSummary({
             )}
 
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{item.description}</p>
+              <p className="text-sm font-medium truncate">{item.description || t("noDescription")}</p>
               <p className="text-xs text-muted-foreground">
                 {TYPE_LABELS[item.type]}
                 {item.categoryName && ` · ${item.categoryName}`}
@@ -130,7 +134,7 @@ export function RecurringSummary({
                 {item.type === "income" ? "+" : "−"}{fmt(item.amount)}
               </p>
               <p className={`text-xs ${item.occurredThisMonth ? "text-green-600 dark:text-green-400" : "text-yellow-600 dark:text-yellow-400"}`}>
-                {item.occurredThisMonth ? "Ejecutado" : "Pendiente"}
+                {item.occurredThisMonth ? t("executed") : t("pending")}
               </p>
             </div>
           </div>

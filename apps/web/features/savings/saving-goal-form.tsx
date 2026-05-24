@@ -8,6 +8,7 @@ import { Button } from "@workspace/ui/components/button"
 import { DatePicker } from "@workspace/ui/components/date-picker"
 import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
+import { useTranslations } from "next-intl"
 import { savingGoalApi } from "./api"
 import type { SavingGoal, SavingGoalCreate, SavingGoalUpdate } from "./types"
 
@@ -19,6 +20,8 @@ interface SavingGoalFormProps {
 
 export function SavingGoalForm({ onSuccess, onCancel, initialValues }: SavingGoalFormProps) {
   const { data: session } = useSession()
+  const t = useTranslations("savings")
+  const tCommon = useTranslations("common")
   const isEdit = Boolean(initialValues)
 
   const form = useForm({
@@ -40,7 +43,7 @@ export function SavingGoalForm({ onSuccess, onCancel, initialValues }: SavingGoa
             description: value.description || undefined,
           }
           goal = await savingGoalApi.update(initialValues.id, payload, token)
-          toast.success("Meta actualizada")
+          toast.success(t("goalUpdated"))
         } else {
           const payload: SavingGoalCreate = {
             name: value.name,
@@ -49,11 +52,11 @@ export function SavingGoalForm({ onSuccess, onCancel, initialValues }: SavingGoa
             description: value.description || undefined,
           }
           goal = await savingGoalApi.create(payload, token)
-          toast.success("Meta de ahorro creada exitosamente")
+          toast.success(t("goalCreated"))
         }
         onSuccess(goal)
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Error al guardar la meta")
+        toast.error(err instanceof Error ? err.message : t("errorSaving"))
       }
     },
   })
@@ -68,14 +71,14 @@ export function SavingGoalForm({ onSuccess, onCancel, initialValues }: SavingGoa
       <FieldGroup>
         <form.Field
           name="name"
-          validators={{ onSubmit: ({ value }) => !value.trim() ? "El nombre es requerido" : undefined }}
+          validators={{ onSubmit: ({ value }) => !value.trim() ? t("nameRequired") : undefined }}
         >
           {(field) => (
             <Field>
-              <FieldLabel htmlFor="name">Nombre</FieldLabel>
+              <FieldLabel htmlFor="name">{t("name")}</FieldLabel>
               <Input
                 id="name"
-                placeholder="Ej: Fondo de emergencia"
+                placeholder={t("namePlaceholder")}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
@@ -89,11 +92,11 @@ export function SavingGoalForm({ onSuccess, onCancel, initialValues }: SavingGoa
 
         <form.Field
           name="target_amount"
-          validators={{ onSubmit: ({ value }) => !value || Number(value) <= 0 ? "El monto debe ser mayor a 0" : undefined }}
+          validators={{ onSubmit: ({ value }) => !value || Number(value) <= 0 ? t("amountRequired") : undefined }}
         >
           {(field) => (
             <Field>
-              <FieldLabel htmlFor="target_amount">Monto objetivo</FieldLabel>
+              <FieldLabel htmlFor="target_amount">{t("targetAmount")}</FieldLabel>
               <Input
                 id="target_amount"
                 type="number"
@@ -113,11 +116,11 @@ export function SavingGoalForm({ onSuccess, onCancel, initialValues }: SavingGoa
         <form.Field name="deadline">
           {(field) => (
             <Field>
-              <FieldLabel>Fecha límite <span className="text-muted-foreground">(opcional)</span></FieldLabel>
+              <FieldLabel>{t("deadlineField")} <span className="text-muted-foreground">{tCommon("optional")}</span></FieldLabel>
               <DatePicker
                 value={field.state.value ?? ""}
                 onChange={field.handleChange}
-                placeholder="Sin fecha límite"
+                placeholder={t("noDeadline")}
               />
             </Field>
           )}
@@ -126,10 +129,10 @@ export function SavingGoalForm({ onSuccess, onCancel, initialValues }: SavingGoa
         <form.Field name="description">
           {(field) => (
             <Field>
-              <FieldLabel htmlFor="description">Descripción <span className="text-muted-foreground">(opcional)</span></FieldLabel>
+              <FieldLabel htmlFor="description">{t("descriptionField")} <span className="text-muted-foreground">{tCommon("optional")}</span></FieldLabel>
               <Input
                 id="description"
-                placeholder="Ej: Para imprevistos"
+                placeholder={t("descriptionPlaceholder")}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
               />
@@ -139,12 +142,12 @@ export function SavingGoalForm({ onSuccess, onCancel, initialValues }: SavingGoa
 
         <div className="flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
+            {tCommon("cancel")}
           </Button>
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Guardando…" : isEdit ? "Guardar cambios" : "Crear meta"}
+                {isSubmitting ? tCommon("saving") : isEdit ? t("saveChanges") : t("createGoal")}
               </Button>
             )}
           </form.Subscribe>

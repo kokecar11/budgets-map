@@ -4,12 +4,8 @@ import Link from "next/link"
 import { Card, CardContent } from "@workspace/ui/components/card"
 import { Button } from "@workspace/ui/components/button"
 import { ChevronRight, Trash2 } from "lucide-react"
+import { useTranslations } from "next-intl"
 import type { Budget } from "./types"
-
-const MONTHS = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-]
 
 interface BudgetCardProps {
   budget: Budget
@@ -17,6 +13,7 @@ interface BudgetCardProps {
 }
 
 export function BudgetCard({ budget, onDelete }: BudgetCardProps) {
+  const t = useTranslations("budgets")
   return (
     <Card>
       <CardContent className="flex items-center justify-between p-4">
@@ -24,7 +21,7 @@ export function BudgetCard({ budget, onDelete }: BudgetCardProps) {
           <div className="flex flex-col gap-1 min-w-0">
             <span className="font-medium">{budget.name}</span>
             <span className="text-muted-foreground text-sm">
-              {MONTHS[budget.month - 1]} {budget.year}
+              {t(`months.${budget.month}`)} {budget.year}
             </span>
             {budget.description && (
               <span className="text-muted-foreground text-xs truncate">{budget.description}</span>
