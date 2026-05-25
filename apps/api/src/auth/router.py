@@ -4,8 +4,11 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from src.auth.dependencies import get_auth_service, get_current_user
 from src.auth.schemas import (
     ConfirmRequest,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
     IdTokenSignInRequest,
     RefreshTokenRequest,
+    ResetPasswordRequest,
     SignInRequest,
     SignOutRequest,
     SignUpRequest,
@@ -104,3 +107,30 @@ async def sign_out(
 async def me(current_user: UserModel = Depends(get_current_user)):
     """Return the authenticated user's local profile."""
     return current_user
+
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+async def forgot_password(
+    data: ForgotPasswordRequest,
+    service: AuthService = Depends(get_auth_service),
+):
+    """
+    Send a password reset email.
+
+    Always returns ok regardless of whether the email exists to prevent
+    email enumeration attacks.
+    """
+    return await service.forgot_password(data)
+
+
+@router.post("/reset-password", response_model=TokenResponse)
+async def reset_password(
+    data: ResetPasswordRequest,
+    service: AuthService = Depends(get_auth_service),
+):
+    """
+    Verify a password-reset OTP token, set a new password, and return a fresh session.
+
+    Returns 400 EXPIRED_OR_INVALID_TOKEN if the token_hash is invalid or expired.
+    """
+    return await service.reset_password(data)
