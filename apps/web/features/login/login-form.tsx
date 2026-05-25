@@ -17,6 +17,7 @@ import {
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
 import { useTranslations } from "next-intl"
+import { Link } from "@/i18n/navigation"
 
 export function LoginForm({
   className,
@@ -107,12 +108,12 @@ export function LoginForm({
                   <Field>
                     <div className="flex items-center">
                       <FieldLabel htmlFor="password">{t("password")}</FieldLabel>
-                      <a
-                        href="#"
+                      <Link
+                        href="/forgot-password"
                         className="ml-auto text-sm underline-offset-2 hover:underline"
                       >
                         {t("forgotPassword")}
-                      </a>
+                      </Link>
                     </div>
                     <Input
                       id="password"

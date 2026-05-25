@@ -37,6 +37,42 @@ export const { auth, handlers, signOut } = NextAuth({
       },
     }),
     Credentials({
+      id: "reset-password",
+      credentials: {
+        access_token: {},
+        refresh_token: {},
+        new_password: {},
+      },
+      async authorize(credentials) {
+        const res = await fetch(
+          `${process.env.API_URL ?? "http://api:8000"}/api/v1/auth/reset-password`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              access_token: credentials.access_token,
+              refresh_token: credentials.refresh_token,
+              new_password: credentials.new_password,
+            }),
+          }
+        )
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: "Reset failed" }))
+          throw new Error(err.detail ?? "Reset failed")
+        }
+        const data = await res.json()
+        return {
+          id: data.user_id,
+          name: data.name,
+          email: data.email,
+          currency: data.currency,
+          plan: data.plan ?? "free",
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+        }
+      },
+    }),
+    Credentials({
       credentials: {
         email: { label: "Email" },
         password: { label: "Password", type: "password" },

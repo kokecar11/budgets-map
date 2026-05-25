@@ -745,7 +745,26 @@
     "confirmFailed": "La confirmación falló. El enlace puede haber expirado o ya fue usado.",
     "unexpectedError": "Ocurrió un error inesperado. Intenta de nuevo.",
     "couldNotConfirm": "No se pudo confirmar tu cuenta.",
-    "backToLogin": "Volver al inicio de sesión"
+    "backToLogin": "Volver al inicio de sesión",
+    "forgotPasswordTitle": "¿Olvidaste tu contraseña?",
+    "forgotPasswordSubtitle": "Ingresa tu correo y te enviaremos un enlace para restablecerla.",
+    "sendResetLink": "Enviar enlace",
+    "sendingResetLink": "Enviando...",
+    "resetEmailSent": "Correo enviado",
+    "resetEmailSentDesc": "Revisa tu bandeja de entrada. Si el correo existe, recibirás un enlace en breve.",
+    "resetPasswordTitle": "Establece una nueva contraseña",
+    "resetPasswordSubtitle": "Ingresa y confirma tu nueva contraseña.",
+    "newPassword": "Nueva contraseña",
+    "newPasswordRequired": "La nueva contraseña es requerida",
+    "newPasswordMin": "Mínimo 8 caracteres",
+    "confirmNewPassword": "Confirmar nueva contraseña",
+    "confirmNewPasswordRequired": "Confirma tu nueva contraseña",
+    "newPasswordMismatch": "Las contraseñas no coinciden",
+    "updatingPassword": "Actualizando...",
+    "updatePassword": "Actualizar contraseña",
+    "resetLinkExpired": "Este link expiró o ya fue usado. Solicita uno nuevo.",
+    "requestNewLink": "Solicitar nuevo enlace",
+    "resetSuccess": "¡Contraseña actualizada! Redirigiendo..."
   },
   "public": {
     "nav": {

@@ -745,7 +745,26 @@
     "confirmFailed": "Confirmation failed. The link may have expired or already been used.",
     "unexpectedError": "An unexpected error occurred. Please try again.",
     "couldNotConfirm": "Could not confirm your account.",
-    "backToLogin": "Back to sign in"
+    "backToLogin": "Back to sign in",
+    "forgotPasswordTitle": "Forgot your password?",
+    "forgotPasswordSubtitle": "Enter your email and we'll send you a reset link.",
+    "sendResetLink": "Send reset link",
+    "sendingResetLink": "Sending...",
+    "resetEmailSent": "Email sent",
+    "resetEmailSentDesc": "Check your inbox. If the email exists, you'll receive a reset link shortly.",
+    "resetPasswordTitle": "Set a new password",
+    "resetPasswordSubtitle": "Enter and confirm your new password.",
+    "newPassword": "New password",
+    "newPasswordRequired": "New password is required",
+    "newPasswordMin": "Minimum 8 characters",
+    "confirmNewPassword": "Confirm new password",
+    "confirmNewPasswordRequired": "Confirm your new password",
+    "newPasswordMismatch": "Passwords do not match",
+    "updatingPassword": "Updating...",
+    "updatePassword": "Update password",
+    "resetLinkExpired": "This link has expired or was already used. Request a new one.",
+    "requestNewLink": "Request new link",
+    "resetSuccess": "Password updated! Redirecting..."
   },
   "public": {
     "nav": {

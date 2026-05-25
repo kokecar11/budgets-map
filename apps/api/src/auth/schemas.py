@@ -64,3 +64,18 @@ class UserMeResponse(BaseModel):
     plan: str = "free"
 
     model_config = {"from_attributes": True}
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+    redirect_to: str
+
+
+class ForgotPasswordResponse(BaseModel):
+    message: str = "ok"
+
+
+class ResetPasswordRequest(BaseModel):
+    access_token: str
+    refresh_token: str
+    new_password: str
