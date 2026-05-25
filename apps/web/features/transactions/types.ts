@@ -11,6 +11,8 @@ export interface Transaction {
   recurrence?: "none" | "weekly" | "monthly" | null
   transfer_to_account_id?: string | null
   saving_goal_id?: string | null
+  recurrence_day_of_month?: number | null
+  parent_transaction_id?: string | null
   created_at?: string
   updated_at?: string
 }

@@ -3,6 +3,7 @@ from sqlalchemy import (
     Column,
     ForeignKey,
     Float,
+    Integer,
     String,
     DateTime,
     Boolean,
@@ -10,7 +11,7 @@ from sqlalchemy import (
     event,
     func,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from src.core.utils import generate_uuid
 from src.core.database import Base
 from src.core.mixins import TimestampMixin
@@ -42,6 +43,8 @@ class TransactionModel(TimestampMixin, Base):
     is_recurring = Column(Boolean, nullable=False, default=False)
     recurrence = Column(String, nullable=True)  # ENUM: none|weekly|monthly
     last_generated_at = Column(DateTime(timezone=True), nullable=True)
+    recurrence_day_of_month = Column(Integer, nullable=True)
+    parent_transaction_id = Column(String, ForeignKey("transactions.id", ondelete="SET NULL"), nullable=True)
 
     # Optional FKs — solo uno puede tener valor a la vez (ver CheckConstraint)
     transfer_to_account_id = Column(String, ForeignKey("accounts.id"), nullable=True)
@@ -72,3 +75,9 @@ class TransactionModel(TimestampMixin, Base):
     loan_payment = relationship("LoanPaymentModel", back_populates="transaction")
     saving_goal = relationship("SavingGoalModel", back_populates="contributions")
     budget_items = relationship("BudgetItemModel", back_populates="transaction")
+    children = relationship(
+        "TransactionModel",
+        foreign_keys="[TransactionModel.parent_transaction_id]",
+        backref=backref("parent", remote_side="TransactionModel.id"),
+        lazy="select",
+    )
