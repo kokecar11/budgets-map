@@ -15,7 +15,7 @@ router = APIRouter(prefix="/transactions", tags=["Transactions"])
 CurrentUser = Annotated[UserModel, Depends(get_current_user)]
 
 
-@router.get("/", response_model=List[TransactionResponse])
+@router.get("", response_model=List[TransactionResponse])
 async def list_transactions(
     current_user: CurrentUser,
     service: TransactionService = Depends(get_transaction_service),
@@ -74,7 +74,7 @@ async def get_transaction(
     return await service.get_or_404(id)
 
 
-@router.post("/", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
 async def create_transaction(
     data: TransactionCreate,
     current_user: CurrentUser,

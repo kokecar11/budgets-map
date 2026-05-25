@@ -12,7 +12,7 @@ router = APIRouter(prefix="/categories", tags=["Categories"])
 CurrentUser = Annotated[UserModel, Depends(get_current_user)]
 
 
-@router.get("/", response_model=List[CategoryResponse])
+@router.get("", response_model=List[CategoryResponse])
 async def list_categories(
     current_user: CurrentUser,
     service: CategoryService = Depends(get_category_service),
@@ -29,7 +29,7 @@ async def get_category(
     return await service.get_or_404(id)
 
 
-@router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(
     data: CategoryCreate,
     current_user: CurrentUser,

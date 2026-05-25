@@ -19,7 +19,7 @@ CurrentUser = Annotated[UserModel, Depends(get_current_user)]
 
 # --- Budgets ---
 
-@router.get("/", response_model=List[BudgetResponse])
+@router.get("", response_model=List[BudgetResponse])
 async def list_budgets(
     current_user: CurrentUser,
     service: BudgetService = Depends(get_budget_service),
@@ -36,7 +36,7 @@ async def get_budget(
     return await service.get_or_404(id)
 
 
-@router.post("/", response_model=BudgetResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=BudgetResponse, status_code=status.HTTP_201_CREATED)
 async def create_budget(
     data: BudgetCreate,
     current_user: CurrentUser,

@@ -11,7 +11,7 @@ from sqlalchemy import (
     event,
     func,
 )
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 from src.core.utils import generate_uuid
 from src.core.database import Base
 from src.core.mixins import TimestampMixin
@@ -75,9 +75,3 @@ class TransactionModel(TimestampMixin, Base):
     loan_payment = relationship("LoanPaymentModel", back_populates="transaction")
     saving_goal = relationship("SavingGoalModel", back_populates="contributions")
     budget_items = relationship("BudgetItemModel", back_populates="transaction")
-    children = relationship(
-        "TransactionModel",
-        foreign_keys="[TransactionModel.parent_transaction_id]",
-        backref=backref("parent", remote_side="TransactionModel.id"),
-        lazy="select",
-    )

@@ -3,13 +3,13 @@ import type { Account, AccountCreate, AccountUpdate } from "./types"
 
 export const accountApi = {
   list: (token: string) =>
-    apiFetch<Account[]>("/api/v1/accounts/", { token }),
+    apiFetch<Account[]>("/api/v1/accounts", { token }),
 
   get: (id: string, token: string) =>
     apiFetch<Account>(`/api/v1/accounts/${id}`, { token }),
 
   create: (data: AccountCreate, token: string) =>
-    apiFetch<Account>("/api/v1/accounts/", {
+    apiFetch<Account>("/api/v1/accounts", {
       method: "POST",
       body: JSON.stringify(data),
       token,
