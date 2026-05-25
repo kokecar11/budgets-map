@@ -8,13 +8,13 @@ import type {
 
 export const creditCardApi = {
   list: (token: string) =>
-    apiFetch<CreditCard[]>("/api/v1/credit-cards/", { token }),
+    apiFetch<CreditCard[]>("/api/v1/credit-cards", { token }),
 
   get: (id: string, token: string) =>
     apiFetch<CreditCard>(`/api/v1/credit-cards/${id}`, { token }),
 
   create: (data: CreditCardCreate, token: string) =>
-    apiFetch<CreditCard>("/api/v1/credit-cards/", {
+    apiFetch<CreditCard>("/api/v1/credit-cards", {
       method: "POST",
       body: JSON.stringify(data),
       token,

@@ -12,7 +12,7 @@ router = APIRouter(prefix="/permissions", tags=["Permissions"])
 CurrentUser = Annotated[UserModel, Depends(get_current_user)]
 
 
-@router.get("/", response_model=List[PermissionResponse])
+@router.get("", response_model=List[PermissionResponse])
 async def list_permissions(
     _: CurrentUser,
     service: PermissionService = Depends(get_permission_service),
@@ -29,7 +29,7 @@ async def get_permission(
     return await service.get_or_404(id)
 
 
-@router.post("/", response_model=PermissionResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=PermissionResponse, status_code=status.HTTP_201_CREATED)
 async def create_permission(
     data: PermissionCreate,
     _: CurrentUser,

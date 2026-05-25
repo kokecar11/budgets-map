@@ -18,6 +18,7 @@ settings = get_settings()
 app = FastAPI(
     title=settings.app_name,
     version=settings.version,
+    redirect_slashes=False,
 )
 
 origins = settings.ALLOWED_HOSTS

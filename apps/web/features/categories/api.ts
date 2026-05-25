@@ -3,13 +3,13 @@ import type { Category, CategoryCreate, CategoryUpdate } from "./types"
 
 export const categoryApi = {
   list: (token: string) =>
-    apiFetch<Category[]>("/api/v1/categories/", { token }),
+    apiFetch<Category[]>("/api/v1/categories", { token }),
 
   get: (id: string, token: string) =>
     apiFetch<Category>(`/api/v1/categories/${id}`, { token }),
 
   create: (data: CategoryCreate, token: string) =>
-    apiFetch<Category>("/api/v1/categories/", {
+    apiFetch<Category>("/api/v1/categories", {
       method: "POST",
       body: JSON.stringify(data),
       token,

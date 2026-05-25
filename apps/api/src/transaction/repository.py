@@ -117,7 +117,15 @@ class TransactionRepository:
         return result.scalars().all()
 
     async def create(self, data: TransactionCreate) -> TransactionModel:
-        obj = TransactionModel(**data.model_dump())
+        dump = data.model_dump()
+        if (
+            dump.get("is_recurring")
+            and dump.get("recurrence") == "monthly"
+            and dump.get("recurrence_day_of_month") is None
+            and dump.get("date") is not None
+        ):
+            dump["recurrence_day_of_month"] = dump["date"].day
+        obj = TransactionModel(**dump)
         self.db.add(obj)
         await self.db.flush()
         await self.db.refresh(obj)

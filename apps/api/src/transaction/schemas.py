@@ -28,6 +28,8 @@ class TransactionBase(BaseModel):
     credit_card_payment_id: Optional[str] = None
     loan_payment_id: Optional[str] = None
     saving_goal_id: Optional[str] = None
+    recurrence_day_of_month: Optional[int] = None
+    parent_transaction_id: Optional[str] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -59,6 +61,7 @@ class TransactionResponse(TransactionBase):
     user_id: str
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    last_generated_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 

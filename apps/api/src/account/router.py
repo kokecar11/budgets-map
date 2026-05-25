@@ -12,7 +12,7 @@ router = APIRouter(prefix="/accounts", tags=["Accounts"])
 CurrentUser = Annotated[UserModel, Depends(get_current_user)]
 
 
-@router.get("/", response_model=List[AccountResponse])
+@router.get("", response_model=List[AccountResponse])
 async def list_accounts(
     current_user: CurrentUser,
     service: AccountService = Depends(get_account_service),
@@ -29,7 +29,7 @@ async def get_account(
     return await service.get_or_404(id)
 
 
-@router.post("/", response_model=AccountResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=AccountResponse, status_code=status.HTTP_201_CREATED)
 async def create_account(
     data: AccountCreate,
     current_user: CurrentUser,

@@ -3,7 +3,7 @@ import type { Transaction, TransactionCreate, TransactionUpdate, TransactionPage
 
 export const transactionApi = {
   list: (token: string) =>
-    apiFetch<Transaction[]>("/api/v1/transactions/", { token }),
+    apiFetch<Transaction[]>("/api/v1/transactions", { token }),
 
   listPage: (token: string, params?: { limit?: number; next_token?: string }) => {
     const q = new URLSearchParams()
@@ -16,7 +16,7 @@ export const transactionApi = {
     apiFetch<Transaction>(`/api/v1/transactions/${id}`, { token }),
 
   create: (data: TransactionCreate, token: string) =>
-    apiFetch<Transaction>("/api/v1/transactions/", {
+    apiFetch<Transaction>("/api/v1/transactions", {
       method: "POST",
       body: JSON.stringify(data),
       token,

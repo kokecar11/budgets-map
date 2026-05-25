@@ -25,7 +25,7 @@ CurrentUser = Annotated[UserModel, Depends(get_current_user)]
 
 # --- Credit Cards ---
 
-@router.get("/", response_model=List[CreditCardResponse])
+@router.get("", response_model=List[CreditCardResponse])
 async def list_credit_cards(
     current_user: CurrentUser,
     service: CreditCardService = Depends(get_credit_card_service),
@@ -42,7 +42,7 @@ async def get_credit_card(
     return await service.get_or_404(id)
 
 
-@router.post("/", response_model=CreditCardResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=CreditCardResponse, status_code=status.HTTP_201_CREATED)
 async def create_credit_card(
     data: CreditCardCreate,
     current_user: CurrentUser,

@@ -3,6 +3,7 @@ from sqlalchemy import (
     Column,
     ForeignKey,
     Float,
+    Integer,
     String,
     DateTime,
     Boolean,
@@ -42,6 +43,8 @@ class TransactionModel(TimestampMixin, Base):
     is_recurring = Column(Boolean, nullable=False, default=False)
     recurrence = Column(String, nullable=True)  # ENUM: none|weekly|monthly
     last_generated_at = Column(DateTime(timezone=True), nullable=True)
+    recurrence_day_of_month = Column(Integer, nullable=True)
+    parent_transaction_id = Column(String, ForeignKey("transactions.id", ondelete="SET NULL"), nullable=True)
 
     # Optional FKs — solo uno puede tener valor a la vez (ver CheckConstraint)
     transfer_to_account_id = Column(String, ForeignKey("accounts.id"), nullable=True)
