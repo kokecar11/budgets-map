@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select"
+import { useTranslations } from "next-intl"
 import { categoryApi } from "./api"
 import type { Category, CategoryCreate } from "./types"
 
@@ -43,6 +44,8 @@ interface CategoryFormProps {
 
 export function CategoryForm({ initialValues, onSuccess, onCancel }: CategoryFormProps) {
   const { data: session } = useSession()
+  const t = useTranslations("categories")
+  const tCommon = useTranslations("common")
   const isEditing = !!initialValues
 
   const form = useForm({
@@ -62,7 +65,7 @@ export function CategoryForm({ initialValues, onSuccess, onCancel }: CategoryFor
             icon: value.icon || undefined,
             color: value.color || undefined,
           }, session?.accessToken ?? "")
-          toast.success("Categoría actualizada")
+          toast.success(t("categoryUpdated"))
         } else {
           category = await categoryApi.create({
             name: value.name,
@@ -70,11 +73,11 @@ export function CategoryForm({ initialValues, onSuccess, onCancel }: CategoryFor
             icon: value.icon || undefined,
             color: value.color || undefined,
           }, session?.accessToken ?? "")
-          toast.success("Categoría creada exitosamente")
+          toast.success(t("categoryCreated"))
         }
         onSuccess(category)
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Error al guardar la categoría")
+        toast.error(err instanceof Error ? err.message : t("errorSaving"))
       }
     },
   })
@@ -90,14 +93,14 @@ export function CategoryForm({ initialValues, onSuccess, onCancel }: CategoryFor
         {/* Name */}
         <form.Field
           name="name"
-          validators={{ onSubmit: ({ value }) => !value.trim() ? "El nombre es requerido" : undefined }}
+          validators={{ onSubmit: ({ value }) => !value.trim() ? t("nameRequired") : undefined }}
         >
           {(field) => (
             <Field>
-              <FieldLabel htmlFor="name">Nombre</FieldLabel>
+              <FieldLabel htmlFor="name">{t("name")}</FieldLabel>
               <Input
                 id="name"
-                placeholder="Ej: Alimentación"
+                placeholder={t("namePlaceholder")}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
@@ -113,17 +116,17 @@ export function CategoryForm({ initialValues, onSuccess, onCancel }: CategoryFor
         <form.Field name="type">
           {(field) => (
             <Field>
-              <FieldLabel>Tipo</FieldLabel>
+              <FieldLabel>{t("type")}</FieldLabel>
               <Select
                 value={field.state.value}
                 onValueChange={(v) => field.handleChange(v as CategoryCreate["type"])}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar tipo" />
+                  <SelectValue placeholder={t("selectType")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="expense">Gasto</SelectItem>
-                  <SelectItem value="income">Ingreso</SelectItem>
+                  <SelectItem value="expense">{t("typeExpense")}</SelectItem>
+                  <SelectItem value="income">{t("typeIncome")}</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
@@ -137,7 +140,7 @@ export function CategoryForm({ initialValues, onSuccess, onCancel }: CategoryFor
               {(field) => (
                 <Field>
                   <FieldLabel>
-                    Ícono <span className="text-muted-foreground">(opcional)</span>
+                    {t("icon")} <span className="text-muted-foreground">{tCommon("optional")}</span>
                   </FieldLabel>
                   <div className="grid grid-cols-8 gap-1.5 p-3 rounded-lg border bg-muted/30">
                     {(type === "income" ? INCOME_ICONS : EXPENSE_ICONS).map((emoji) => (
@@ -157,7 +160,7 @@ export function CategoryForm({ initialValues, onSuccess, onCancel }: CategoryFor
                   </div>
                   {field.state.value && (
                     <p className="text-xs text-muted-foreground">
-                      Seleccionado: {field.state.value} — haz clic de nuevo para quitar
+                      {t("iconSelected", { icon: field.state.value })}
                     </p>
                   )}
                 </Field>
@@ -171,7 +174,7 @@ export function CategoryForm({ initialValues, onSuccess, onCancel }: CategoryFor
           {(field) => (
             <Field>
               <FieldLabel>
-                Color <span className="text-muted-foreground">(opcional)</span>
+                {t("color")} <span className="text-muted-foreground">{tCommon("optional")}</span>
               </FieldLabel>
               <div className="flex flex-col gap-2">
                 <div className="grid grid-cols-6 gap-2 p-3 rounded-lg border bg-muted/30">
@@ -196,7 +199,7 @@ export function CategoryForm({ initialValues, onSuccess, onCancel }: CategoryFor
                     style={{ "--sw": field.state.value || "transparent" } as React.CSSProperties}
                   />
                   <Input
-                    placeholder="Personalizado: #FF5733"
+                    placeholder={t("customColor")}
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     className="font-mono text-sm"
@@ -209,14 +212,14 @@ export function CategoryForm({ initialValues, onSuccess, onCancel }: CategoryFor
 
         <div className="flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
+            {t("cancel")}
           </Button>
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting
-                  ? isEditing ? "Guardando…" : "Creando…"
-                  : isEditing ? "Guardar cambios" : "Crear categoría"}
+                  ? isEditing ? t("saving") : t("creating")
+                  : isEditing ? t("saveChanges") : t("createCategory")}
               </Button>
             )}
           </form.Subscribe>

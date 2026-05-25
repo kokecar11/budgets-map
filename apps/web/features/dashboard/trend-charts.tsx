@@ -12,8 +12,12 @@ import {
   type ChartConfig,
 } from "@workspace/ui/components/chart"
 import { BarChart2, PieChart as PieIcon } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
 import type { Transaction } from "@/features/transactions/types"
 import type { Category } from "@/features/categories/types"
+import { LOCALE_TAG } from "@/lib/dates"
+import type { Locale } from "@/i18n/routing"
+import { useCurrency } from "@/hooks/use-currency"
 
 interface TrendChartsProps {
   transactions: Transaction[]
@@ -26,18 +30,21 @@ const DEFAULT_COLORS = [
 ]
 
 const areaConfig = {
-  income:  { label: "Ingresos", color: "var(--color-income)" },
-  expense: { label: "Gastos",   color: "var(--color-expense)" },
+  income:  { label: "income", color: "var(--color-income)" },
+  expense: { label: "expense",   color: "var(--color-expense)" },
 } satisfies ChartConfig
 
-function shortMonth(date: Date) {
-  return date.toLocaleDateString("es-MX", { month: "short" })
+function shortMonth(date: Date, localeTag: string) {
+  return date.toLocaleDateString(localeTag, { month: "short" })
 }
 
 type CategoryChartType = "bar" | "pie"
 
 export function TrendCharts({ transactions, categories }: TrendChartsProps) {
   const [categoryChartType, setCategoryChartType] = useState<CategoryChartType>("bar")
+  const locale = useLocale() as Locale
+  const t = useTranslations("dashboard")
+  const localeTag = LOCALE_TAG[locale]
 
   const categoryColorMap = Object.fromEntries(
     categories.map((c, i) => [c.id, c.color ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length]])
@@ -50,7 +57,7 @@ export function TrendCharts({ transactions, categories }: TrendChartsProps) {
     const months: { label: string; income: number; expense: number }[] = []
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      months.push({ label: shortMonth(d), income: 0, expense: 0 })
+      months.push({ label: shortMonth(d, localeTag), income: 0, expense: 0 })
     }
     for (const tx of transactions) {
       const d = new Date(tx.date)
@@ -92,16 +99,15 @@ export function TrendCharts({ transactions, categories }: TrendChartsProps) {
     return cfg
   }, [categoryData])
 
-  const fmt = (n: number) =>
-    `$ ${n.toLocaleString("es-MX", { maximumFractionDigits: 0 })}`
+  const fmt = useCurrency()
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
       {/* ── Ingresos vs Gastos ── */}
       <div className="rounded-xl border bg-card p-6">
-        <p className="font-semibold mb-1">Ingresos vs Gastos</p>
-        <p className="text-xs text-muted-foreground mb-4">Últimos 6 meses</p>
+        <p className="font-semibold mb-1">{t("trendIncomeVsExpenses")}</p>
+        <p className="text-xs text-muted-foreground mb-4">{t("trendLast6Months")}</p>
         <ChartContainer
           config={areaConfig}
           className="h-52 w-full"
@@ -133,13 +139,12 @@ export function TrendCharts({ transactions, categories }: TrendChartsProps) {
       {/* ── Gastos por categoría ── */}
       <div className="rounded-xl border bg-card p-6">
         <div className="flex items-center justify-between mb-1">
-          <p className="font-semibold">Gastos por categoría</p>
+          <p className="font-semibold">{t("trendExpensesByCategory")}</p>
           <div className="flex items-center gap-1 border rounded-lg p-0.5">
             <button
               type="button"
               onClick={() => setCategoryChartType("bar")}
               className={`p-1.5 rounded-md transition-colors ${categoryChartType === "bar" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              title="Barras"
             >
               <BarChart2 className="size-3.5" />
             </button>
@@ -147,17 +152,16 @@ export function TrendCharts({ transactions, categories }: TrendChartsProps) {
               type="button"
               onClick={() => setCategoryChartType("pie")}
               className={`p-1.5 rounded-md transition-colors ${categoryChartType === "pie" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              title="Torta"
             >
               <PieIcon className="size-3.5" />
             </button>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground mb-4">Mes actual</p>
+        <p className="text-xs text-muted-foreground mb-4">{t("trendCurrentMonth")}</p>
 
         {categoryData.length === 0 ? (
           <div className="h-52 flex items-center justify-center">
-            <p className="text-sm text-muted-foreground">Sin gastos este mes</p>
+            <p className="text-sm text-muted-foreground">{t("trendNoExpenses")}</p>
           </div>
         ) : categoryChartType === "bar" ? (
           <ChartContainer config={catConfig} className="h-52 w-full">

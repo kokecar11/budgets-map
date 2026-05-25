@@ -3,7 +3,7 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 
 
-export const { auth, handlers } = NextAuth({
+export const { auth, handlers, signOut } = NextAuth({
   providers: [
     Credentials({
       id: "confirm",
@@ -68,7 +68,11 @@ export const { auth, handlers } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt: async ({ token, user }) => {
+    jwt: async ({ token, user, trigger, session }) => {
+      if (trigger === "update" && session?.user) {
+        if (session.user.name !== undefined) token.name = session.user.name
+        if (session.user.currency !== undefined) token.currency = session.user.currency
+      }
       if (user) {
         token.accessToken = user.access_token
         token.refreshToken = user.refresh_token
@@ -96,6 +100,7 @@ export const { auth, handlers } = NextAuth({
     },
     session: async ({ session, token }) => {
       session.accessToken = token.accessToken
+      session.refreshToken = token.refreshToken
       session.user.id = token.userId ?? ""
       session.user.name = token.name ?? ""
       session.user.email = token.email ?? ""

@@ -16,6 +16,7 @@ import {
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
 import { apiFetch } from "@/lib/api"
+import { useTranslations } from "next-intl"
 
 const CURRENCY_OPTIONS = [
   { value: "COP", label: "COP — Peso colombiano" },
@@ -30,6 +31,7 @@ const CURRENCY_OPTIONS = [
 
 export function SignupForm({ className, ...props }: React.ComponentProps<"div">) {
   const router = useRouter()
+  const t = useTranslations("auth")
   const [serverError, setServerError] = useState<string | null>(null)
   const [requiresConfirmation, setRequiresConfirmation] = useState(false)
 
@@ -69,13 +71,13 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
           redirect: false,
         })
         if (result?.error) {
-          setServerError("Cuenta creada. Por favor inicia sesión.")
+          setServerError(t("accountCreated"))
           router.push("/login")
         } else {
           router.push("/dashboard")
         }
       } catch (err) {
-        setServerError(err instanceof Error ? err.message : "Error al crear la cuenta")
+        setServerError(err instanceof Error ? err.message : t("unexpectedError"))
       }
     },
   })
@@ -90,12 +92,12 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold">Revisa tu correo</h2>
+            <h2 className="text-xl font-bold">{t("checkEmail")}</h2>
             <p className="text-muted-foreground text-sm max-w-xs">
-              Te enviamos un enlace de confirmación. Haz clic en él para activar tu cuenta y poder iniciar sesión.
+              {t("confirmationSent")}
             </p>
             <Button variant="outline" onClick={() => router.push("/login")}>
-              Ir a iniciar sesión
+              {t("goToLogin")}
             </Button>
           </CardContent>
         </Card>
@@ -116,9 +118,9 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
           >
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
-                <h1 className="text-2xl font-bold">Crear cuenta</h1>
+                <h1 className="text-2xl font-bold">{t("createAccount")}</h1>
                 <p className="text-balance text-muted-foreground text-sm">
-                  Gratis para siempre. Sin tarjeta de crédito.
+                  {t("signupSubtitle")}
                 </p>
               </div>
 
@@ -126,15 +128,15 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
               <form.Field
                 name="name"
                 validators={{
-                  onSubmit: ({ value }) => !value.trim() ? "El nombre es requerido" : undefined,
+                  onSubmit: ({ value }) => !value.trim() ? t("nameRequired") : undefined,
                 }}
               >
                 {(field) => (
                   <Field>
-                    <FieldLabel htmlFor="name">Nombre</FieldLabel>
+                    <FieldLabel htmlFor="name">{t("name")}</FieldLabel>
                     <Input
                       id="name"
-                      placeholder="Juan García"
+                      placeholder={t("namePlaceholder")}
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -151,18 +153,18 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
                 name="email"
                 validators={{
                   onSubmit: ({ value }) => {
-                    if (!value) return "El correo es requerido"
-                    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Ingresa un correo válido"
+                    if (!value) return t("emailRequiredSignup")
+                    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return t("emailInvalidSignup")
                   },
                 }}
               >
                 {(field) => (
                   <Field>
-                    <FieldLabel htmlFor="email">Correo electrónico</FieldLabel>
+                    <FieldLabel htmlFor="email">{t("email")}</FieldLabel>
                     <Input
                       id="email"
                       type="email"
-                      placeholder="juan@ejemplo.com"
+                      placeholder={t("emailPlaceholder")}
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -179,18 +181,18 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
                 name="password"
                 validators={{
                   onSubmit: ({ value }) => {
-                    if (!value) return "La contraseña es requerida"
-                    if (value.length < 8) return "Mínimo 8 caracteres"
+                    if (!value) return t("passwordRequired8")
+                    if (value.length < 8) return t("minChars")
                   },
                 }}
               >
                 {(field) => (
                   <Field>
-                    <FieldLabel htmlFor="password">Contraseña</FieldLabel>
+                    <FieldLabel htmlFor="password">{t("passwordSignup")}</FieldLabel>
                     <Input
                       id="password"
                       type="password"
-                      placeholder="Mínimo 8 caracteres"
+                      placeholder={t("passwordPlaceholder")}
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -209,18 +211,18 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
                     name="confirmPassword"
                     validators={{
                       onSubmit: ({ value }) => {
-                        if (!value) return "Confirma tu contraseña"
-                        if (value !== password) return "Las contraseñas no coinciden"
+                        if (!value) return t("confirmPasswordRequired")
+                        if (value !== password) return t("passwordMismatch")
                       },
                     }}
                   >
                     {(field) => (
                       <Field>
-                        <FieldLabel htmlFor="confirmPassword">Confirmar contraseña</FieldLabel>
+                        <FieldLabel htmlFor="confirmPassword">{t("confirmPassword")}</FieldLabel>
                         <Input
                           id="confirmPassword"
                           type="password"
-                          placeholder="Repite tu contraseña"
+                          placeholder={t("confirmPasswordPlaceholder")}
                           value={field.state.value}
                           onChange={(e) => field.handleChange(e.target.value)}
                           onBlur={field.handleBlur}
@@ -238,7 +240,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
               <form.Field name="currency">
                 {(field) => (
                   <Field>
-                    <FieldLabel htmlFor="currency">Moneda principal</FieldLabel>
+                    <FieldLabel htmlFor="currency">{t("mainCurrency")}</FieldLabel>
                     <select
                       id="currency"
                       value={field.state.value}
@@ -261,16 +263,16 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
                 {(isSubmitting) => (
                   <Field>
                     <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? "Creando cuenta…" : "Crear cuenta gratis"}
+                      {isSubmitting ? t("creatingAccount") : t("createFree")}
                     </Button>
                   </Field>
                 )}
               </form.Subscribe>
 
               <FieldDescription className="text-center">
-                ¿Ya tienes cuenta?{" "}
+                {t("alreadyHaveAccount")}{" "}
                 <a href="/login" className="underline underline-offset-2 hover:text-foreground">
-                  Inicia sesión
+                  {t("signIn")}
                 </a>
               </FieldDescription>
             </FieldGroup>
@@ -286,8 +288,8 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
         </CardContent>
       </Card>
       <FieldDescription className="px-6 text-center">
-        Al registrarte aceptas nuestros{" "}
-        <a href="/privacy" className="underline underline-offset-2 hover:text-foreground">Términos y Privacidad</a>.
+        {t("termsNoticeSignup")}{" "}
+        <a href="/privacy" className="underline underline-offset-2 hover:text-foreground">{t("termsAndPrivacy")}</a>.
       </FieldDescription>
     </div>
   )

@@ -6,13 +6,14 @@ import { useTheme } from "next-themes"
 import { useForm } from "@tanstack/react-form"
 import { toast } from "sonner"
 import { Sun, Moon, Monitor } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
 import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
 import { SearchSelect } from "@workspace/ui/components/search-select"
-import { ThemeSelector } from "@workspace/ui/components/theme-selector"
 import { apiFetch } from "@/lib/api"
+import { LanguageSwitcher } from "@/components/language-switcher"
 
 const CURRENCIES = [
   { value: "COP", label: "COP — Peso colombiano" },
@@ -25,16 +26,17 @@ const CURRENCIES = [
   { value: "CLP", label: "CLP — Peso chileno" },
 ]
 
-const MODE_OPTIONS = [
-  { value: "light", label: "Claro", icon: Sun },
-  { value: "dark", label: "Oscuro", icon: Moon },
-  { value: "system", label: "Sistema", icon: Monitor },
-]
-
 export default function SettingsGeneralPage() {
   const { data: session, update: updateSession } = useSession()
   const { theme, setTheme } = useTheme()
   const [saving, setSaving] = useState(false)
+  const t = useTranslations("settings")
+
+  const modeOptions = [
+    { value: "light",  label: t("light"),  icon: Sun },
+    { value: "dark",   label: t("dark"),   icon: Moon },
+    { value: "system", label: t("system"), icon: Monitor },
+  ]
 
   const form = useForm({
     defaultValues: {
@@ -53,9 +55,9 @@ export default function SettingsGeneralPage() {
         await updateSession({
           user: { name: value.name, currency: value.currency },
         })
-        toast.success("Perfil actualizado")
+        toast.success(t("profileUpdated"))
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Error al guardar")
+        toast.error(err instanceof Error ? err.message : t("errorSaving"))
       } finally {
         setSaving(false)
       }
@@ -64,9 +66,9 @@ export default function SettingsGeneralPage() {
 
   return (
     <>
-      {/* ── Perfil ── */}
+      {/* Profile */}
       <div>
-        <h2 className="text-base font-semibold mb-4">Perfil</h2>
+        <h2 className="text-base font-semibold mb-4">{t("profile")}</h2>
         <div className="rounded-xl border bg-card overflow-hidden">
           <form
             className="px-6 py-5"
@@ -80,15 +82,15 @@ export default function SettingsGeneralPage() {
                 name="name"
                 validators={{
                   onSubmit: ({ value }) =>
-                    !value.trim() ? "El nombre es requerido" : undefined,
+                    !value.trim() ? t("nameRequired") : undefined,
                 }}
               >
                 {(field) => (
                   <Field>
-                    <FieldLabel htmlFor="name">Nombre</FieldLabel>
+                    <FieldLabel htmlFor="name">{t("name")}</FieldLabel>
                     <Input
                       id="name"
-                      placeholder="Tu nombre"
+                      placeholder={t("namePlaceholder")}
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -103,7 +105,7 @@ export default function SettingsGeneralPage() {
               </form.Field>
 
               <Field>
-                <FieldLabel>Email</FieldLabel>
+                <FieldLabel>{t("email")}</FieldLabel>
                 <Input
                   value={session?.user?.email ?? ""}
                   disabled
@@ -114,13 +116,13 @@ export default function SettingsGeneralPage() {
               <form.Field name="currency">
                 {(field) => (
                   <Field>
-                    <FieldLabel>Moneda</FieldLabel>
+                    <FieldLabel>{t("currency")}</FieldLabel>
                     <SearchSelect
                       value={field.state.value}
                       onValueChange={(v) => field.handleChange(v)}
                       options={CURRENCIES}
-                      placeholder="Seleccionar moneda"
-                      searchPlaceholder="Buscar moneda..."
+                      placeholder={t("selectCurrency")}
+                      searchPlaceholder={t("searchCurrency")}
                     />
                   </Field>
                 )}
@@ -128,7 +130,7 @@ export default function SettingsGeneralPage() {
 
               <div className="flex justify-end pt-1">
                 <Button type="submit" disabled={saving}>
-                  {saving ? "Guardando…" : "Guardar cambios"}
+                  {saving ? t("saving") : t("saveChanges")}
                 </Button>
               </div>
             </FieldGroup>
@@ -136,14 +138,14 @@ export default function SettingsGeneralPage() {
         </div>
       </div>
 
-      {/* ── Apariencia ── */}
+      {/* Appearance */}
       <div>
-        <h2 className="text-base font-semibold mb-4">Apariencia</h2>
+        <h2 className="text-base font-semibold mb-4">{t("appearance")}</h2>
         <div className="rounded-xl border bg-card px-6 py-5 flex flex-col gap-5">
           <div className="flex flex-col gap-2">
-            <p className="text-sm font-medium">Modo de color</p>
+            <p className="text-sm font-medium">{t("colorMode")}</p>
             <div className="flex gap-2 flex-wrap">
-              {MODE_OPTIONS.map(({ value, label, icon: Icon }) => (
+              {modeOptions.map(({ value, label, icon: Icon }) => (
                 <button
                   key={value}
                   type="button"
@@ -161,11 +163,17 @@ export default function SettingsGeneralPage() {
               ))}
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* <div className="flex flex-col gap-2">
-            <p className="text-sm font-medium">Tema de color</p>
-            <ThemeSelector />
-          </div> */}
+      {/* Language */}
+      <div>
+        <h2 className="text-base font-semibold mb-4">{t("language")}</h2>
+        <div className="rounded-xl border bg-card px-6 py-5">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">{t("language")}</p>
+            <LanguageSwitcher />
+          </div>
         </div>
       </div>
     </>

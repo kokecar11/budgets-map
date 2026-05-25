@@ -57,9 +57,22 @@ async def get_current_user(
     local_user = await user_repo.get_by_id(supabase_user_id)
 
     if not local_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User profile not found — please sign up first",
+        email = str(user_response.user.email or "")
+        local_user = await user_repo.get_by_email(email)
+
+    if not local_user:
+        meta = user_response.user.user_metadata or {}
+        email = str(user_response.user.email or "")
+        name = meta.get("name") or email.split("@")[0]
+        currency = meta.get("currency", "COP")
+        local_user = UserModel(
+            id=supabase_user_id,
+            name=name,
+            email=email,
+            currency=currency,
         )
+        db.add(local_user)
+        await db.flush()
+        await db.refresh(local_user)
 
     return local_user

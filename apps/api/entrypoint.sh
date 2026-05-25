@@ -5,5 +5,5 @@ elif [ "$SERVICE_TYPE" = "beat" ]; then
   exec celery -A src.celery_app beat --loglevel=info
 else
   alembic upgrade head
-  exec uvicorn src.main:app --host 0.0.0.0 --port $PORT --workers 2
+  exec uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2
 fi

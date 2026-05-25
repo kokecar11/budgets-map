@@ -1,8 +1,10 @@
 "use client"
 
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
+import { useTranslations } from "next-intl"
+import { useRouter } from "@/i18n/navigation"
+import { Link } from "@/i18n/navigation"
 
 interface ConfirmClientProps {
   token_hash: string | undefined
@@ -14,13 +16,14 @@ export function ConfirmClient({ token_hash, type }: ConfirmClientProps) {
   const called = useRef(false)
   const [status, setStatus] = useState<"loading" | "error" | "success">("loading")
   const [errorMessage, setErrorMessage] = useState<string>("")
+  const t = useTranslations("auth")
 
   useEffect(() => {
     if (called.current) return
     called.current = true
 
     if (!token_hash || !type) {
-      setErrorMessage("Enlace de confirmación inválido. Faltan parámetros requeridos.")
+      setErrorMessage(t("invalidLink"))
       setStatus("error")
       return
     }
@@ -30,15 +33,15 @@ export function ConfirmClient({ token_hash, type }: ConfirmClientProps) {
         if (result?.ok) {
           setStatus("success")
         } else {
-          setErrorMessage(result?.error ?? "La confirmación falló. El enlace puede haber expirado o ya fue usado.")
+          setErrorMessage(result?.error ?? t("confirmFailed"))
           setStatus("error")
         }
       })
       .catch(() => {
-        setErrorMessage("Ocurrió un error inesperado. Intenta de nuevo.")
+        setErrorMessage(t("unexpectedError"))
         setStatus("error")
       })
-  }, [token_hash, type])
+  }, [token_hash, type, t])
 
   useEffect(() => {
     if (status === "success") {
@@ -49,7 +52,7 @@ export function ConfirmClient({ token_hash, type }: ConfirmClientProps) {
   if (status === "loading") {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center bg-muted p-6">
-        <p className="text-muted-foreground text-sm">Confirmando tu cuenta...</p>
+        <p className="text-muted-foreground text-sm">{t("confirmingAccount")}</p>
       </div>
     )
   }
@@ -57,7 +60,7 @@ export function ConfirmClient({ token_hash, type }: ConfirmClientProps) {
   if (status === "success") {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center bg-muted p-6">
-        <p className="text-sm font-medium">¡Cuenta confirmada! Redirigiendo...</p>
+        <p className="text-sm font-medium">{t("accountConfirmed")}</p>
       </div>
     )
   }
@@ -66,14 +69,14 @@ export function ConfirmClient({ token_hash, type }: ConfirmClientProps) {
     <div className="flex min-h-svh flex-col items-center justify-center bg-muted p-6">
       <div className="w-full max-w-sm space-y-4 text-center">
         <p className="text-destructive text-sm font-medium">
-          {errorMessage || "No se pudo confirmar tu cuenta."}
+          {errorMessage || t("couldNotConfirm")}
         </p>
-        <a
+        <Link
           href="/login"
           className="text-sm underline underline-offset-4 hover:text-primary"
         >
-          Volver al inicio de sesión
-        </a>
+          {t("backToLogin")}
+        </Link>
       </div>
     </div>
   )

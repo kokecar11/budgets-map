@@ -74,17 +74,14 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
     container_name: budgetsmap_web
+    env_file:
+      - ./apps/web/.env.local
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
       API_URL: http://api:8000
+      AUTH_TRUST_HOST: "true"
     ports:
       - "3000:3000"
-    volumes:
-      - ./apps/web:/app/apps/web
-      - ./packages:/app/packages
-      - /app/node_modules
-      - /app/apps/web/node_modules
-      - /app/packages/ui/node_modules
     depends_on:
       - api
     restart: unless-stopped

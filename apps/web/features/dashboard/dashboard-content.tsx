@@ -13,13 +13,16 @@ import {
   ChevronRight,
   Target,
 } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
 import type { Transaction } from "@/features/transactions/types"
 import type { Account } from "@/features/accounts/types"
 import type { SavingGoal } from "@/features/savings/types"
 import type { Loan } from "@/features/loans/types"
 import type { Category } from "@/features/categories/types"
 import type { Budget, BudgetItem } from "@/features/budgets/types"
-import { parseDateParts, fmtDateLocal } from "@/lib/dates"
+import { parseDateParts, fmtDateLocal, LOCALE_TAG } from "@/lib/dates"
+import type { Locale } from "@/i18n/routing"
+import { useCurrency } from "@/hooks/use-currency"
 import { TrendCharts } from "./trend-charts"
 import { BudgetAlerts } from "./budget-alerts"
 import { RecurringSummary } from "./recurring-summary"
@@ -36,9 +39,6 @@ interface DashboardContentProps {
   budgetItems: BudgetItem[]
 }
 
-const fmt = (n: number) =>
-  `$ ${n.toLocaleString("es-MX", { minimumFractionDigits: 0 })}`
-
 export function DashboardContent({
   isPro,
   transactions,
@@ -49,10 +49,13 @@ export function DashboardContent({
   currentBudget,
   budgetItems,
 }: DashboardContentProps) {
+  const locale = useLocale() as Locale
+  const t = useTranslations("dashboard")
+  const fmt = useCurrency()
   const now = new Date()
   const currentMonth = now.getMonth()
   const currentYear = now.getFullYear()
-  const monthName = now.toLocaleDateString("es-MX", { month: "long", year: "numeric" })
+  const monthName = now.toLocaleDateString(LOCALE_TAG[locale], { month: "long", year: "numeric" })
 
   const categoryMap = useMemo(
     () => Object.fromEntries(categories.map((c) => [c.id, c])),
@@ -136,7 +139,7 @@ export function DashboardContent({
             <LayoutDashboard className="size-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">Dashboard</h1>
+            <h1 className="text-xl font-bold">{t("title")}</h1>
             <p className="text-sm text-muted-foreground capitalize">{monthName}</p>
           </div>
         </div>
@@ -145,32 +148,32 @@ export function DashboardContent({
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Balance Total"
+          title={t("totalBalance")}
           value={fmt(totalBalance)}
-          sub={`${accounts.filter((a) => a.is_active).length} cuentas activas`}
+          sub={t("activeAccounts", { count: accounts.filter((a) => a.is_active).length })}
           icon={<Wallet className="size-5" />}
           color="primary"
         />
         <StatCard
-          title="Ingresos del Mes"
+          title={t("monthlyIncome")}
           value={fmt(monthlyIncome)}
-          sub={`${monthTxnIncome} transacciones`}
+          sub={t("transactions", { count: monthTxnIncome })}
           icon={<TrendingUp className="size-5" />}
           color="neutral"
           trend={{ pct: trendPct(monthlyIncome, prevIncome), positiveIsGood: true }}
         />
         <StatCard
-          title="Gastos del Mes"
+          title={t("monthlyExpenses")}
           value={fmt(monthlyExpenses)}
-          sub={`${monthTxnExpense} transacciones`}
+          sub={t("transactions", { count: monthTxnExpense })}
           icon={<TrendingDown className="size-5" />}
           color="red"
           trend={{ pct: trendPct(monthlyExpenses, prevExpenses), positiveIsGood: false }}
         />
         <StatCard
-          title="Balance Neto"
+          title={t("netBalance")}
           value={fmt(Math.abs(netMonth))}
-          sub={netMonth >= 0 ? "Superávit del mes" : "Déficit del mes"}
+          sub={netMonth >= 0 ? t("surplus") : t("deficit")}
           icon={netMonth >= 0 ? <Scale className="size-5" /> : <ArrowUpRight className="size-5" />}
           color={netMonth >= 0 ? "green" : "red"}
           prefix={netMonth >= 0 ? "+" : "-"}
@@ -204,28 +207,28 @@ export function DashboardContent({
               <TrendingUp className="size-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="font-semibold">Últimas Transacciones</p>
-              <p className="text-xs text-muted-foreground">{recentTransactions.length} transacciones recientes</p>
+              <p className="font-semibold">{t("recentTransactions")}</p>
+              <p className="text-xs text-muted-foreground">{t("recentCount", { count: recentTransactions.length })}</p>
             </div>
           </div>
           <Link href="/transactions" className="flex items-center gap-1 text-sm text-primary hover:underline">
-            Ver todas <ChevronRight className="size-4" />
+            {t("viewAll")} <ChevronRight className="size-4" />
           </Link>
         </div>
 
         {recentTransactions.length === 0 ? (
-          <p className="text-muted-foreground text-sm text-center py-12">No hay transacciones aún</p>
+          <p className="text-muted-foreground text-sm text-center py-12">{t("noTransactions")}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-muted-foreground text-xs uppercase tracking-widest">
-                  <th className="text-left px-6 py-3 font-semibold">Fecha</th>
-                  <th className="text-left px-6 py-3 font-semibold">Descripción</th>
-                  <th className="text-left px-6 py-3 font-semibold">Categoría</th>
-                  <th className="text-left px-6 py-3 font-semibold">Cuenta</th>
-                  <th className="text-left px-6 py-3 font-semibold">Tipo</th>
-                  <th className="text-right px-6 py-3 font-semibold">Monto</th>
+                  <th className="text-left px-6 py-3 font-semibold">{t("date")}</th>
+                  <th className="text-left px-6 py-3 font-semibold">{t("description")}</th>
+                  <th className="text-left px-6 py-3 font-semibold">{t("category")}</th>
+                  <th className="text-left px-6 py-3 font-semibold">{t("account")}</th>
+                  <th className="text-left px-6 py-3 font-semibold">{t("type")}</th>
+                  <th className="text-right px-6 py-3 font-semibold">{t("amount")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -236,7 +239,7 @@ export function DashboardContent({
                   return (
                     <tr key={t.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="px-6 py-3 text-muted-foreground whitespace-nowrap text-xs">
-                        {fmtDateLocal(t.date)}
+                        {fmtDateLocal(t.date, undefined, locale)}
                       </td>
                       <td className="px-6 py-3 max-w-40 truncate font-medium">
                         {t.description || "—"}
@@ -251,7 +254,7 @@ export function DashboardContent({
                         <TypeBadge type={t.type} />
                       </td>
                       <td className={`px-6 py-3 text-right font-bold tabular-nums ${isExpense ? "text-red-500" : "text-green-500"}`}>
-                        {isExpense ? "−" : "+"}$ {t.amount.toLocaleString("es-MX")}
+                        {isExpense ? "−" : "+"}{fmt(t.amount)}
                       </td>
                     </tr>
                   )
@@ -271,12 +274,12 @@ export function DashboardContent({
                 <TrendingDown className="size-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="font-semibold">Presupuesto — {currentBudget.name}</p>
-                <p className="text-xs text-muted-foreground">Ejecución de ítems presupuestados</p>
+                <p className="font-semibold">{t("budget")} — {currentBudget.name}</p>
+                <p className="text-xs text-muted-foreground">{t("budgetExecution")}</p>
               </div>
             </div>
             <Link href={`/budgets/${currentBudget.id}`} className="flex items-center gap-1 text-sm text-primary hover:underline">
-              Ver detalle <ChevronRight className="size-4" />
+              {t("viewDetail")} <ChevronRight className="size-4" />
             </Link>
           </div>
 
@@ -287,17 +290,17 @@ export function DashboardContent({
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">
                     {totalPlanned > 0
-                      ? `${((totalSpentOnBudget / totalPlanned) * 100).toFixed(0)}% del presupuesto utilizado`
-                      : "Sin presupuesto definido"}
+                      ? t("budgetUsed", { pct: ((totalSpentOnBudget / totalPlanned) * 100).toFixed(0) })
+                      : t("noBudgetDefined")}
                   </span>
                   {totalSpentOnBudget > totalPlanned && (
                     <span className="text-xs text-destructive font-medium">
-                      · Excedido {fmt(totalSpentOnBudget - totalPlanned)}
+                      · {t("exceeded", { amount: fmt(totalSpentOnBudget - totalPlanned) })}
                     </span>
                   )}
                   {totalSpentOnBudget <= totalPlanned && totalPlanned > 0 && (
                     <span className="text-xs text-green-500 font-medium">
-                      · Disponible {fmt(totalPlanned - totalSpentOnBudget)}
+                      · {t("available", { amount: fmt(totalPlanned - totalSpentOnBudget) })}
                     </span>
                   )}
                 </div>
@@ -329,7 +332,7 @@ export function DashboardContent({
                       )}
                       {item.is_paid && (
                         <span className="text-xs bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded-full shrink-0 font-medium">
-                          Pagado
+                          {t("paid_badge")}
                         </span>
                       )}
                     </div>
@@ -343,7 +346,7 @@ export function DashboardContent({
             {budgetItems.length > 5 && (
               <div className="pt-3 text-center">
                 <Link href={`/budgets/${currentBudget!.id}`} className="text-xs text-primary hover:underline">
-                  Ver todos los ítems ({budgetItems.length}) →
+                  {t("viewAllItems", { count: budgetItems.length })}
                 </Link>
               </div>
             )}
@@ -354,9 +357,9 @@ export function DashboardContent({
       {!currentBudget && (
         <div className="rounded-xl border border-dashed bg-card px-6 py-8 text-center">
           <p className="text-muted-foreground text-sm">
-            No tienes presupuesto para este mes.{" "}
+            {t("noBudget")}{" "}
             <Link href="/budgets" className="text-primary hover:underline font-medium">
-              Crear presupuesto →
+              {t("createBudget")}
             </Link>
           </p>
         </div>
@@ -371,21 +374,21 @@ export function DashboardContent({
               <div className="flex items-center justify-center size-10 rounded-lg bg-muted shrink-0">
                 <Wallet className="size-5 text-muted-foreground" />
               </div>
-              <p className="font-semibold">Cuentas</p>
+              <p className="font-semibold">{t("accounts")}</p>
             </div>
             <Link href="/accounts" className="flex items-center gap-1 text-sm text-primary hover:underline">
-              Gestionar <ChevronRight className="size-4" />
+              {t("manage")} <ChevronRight className="size-4" />
             </Link>
           </div>
           {accounts.length === 0 ? (
-            <p className="text-muted-foreground text-sm text-center py-10">Sin cuentas registradas</p>
+            <p className="text-muted-foreground text-sm text-center py-10">{t("noAccounts")}</p>
           ) : (
             <div className="divide-y">
               {accounts.filter((a) => a.is_active).slice(0, 5).map((a) => (
                 <div key={a.id} className="flex items-center justify-between px-6 py-3">
                   <div>
                     <p className="font-medium text-sm">{a.name}</p>
-                    <p className="text-xs text-muted-foreground">{accountTypeLabel(a.type)}</p>
+                    <p className="text-xs text-muted-foreground"><AccountTypeLabel type={a.type} /></p>
                   </div>
                   <span className={`font-semibold tabular-nums text-sm ${a.balance < 0 ? "text-destructive" : ""}`}>
                     {fmt(a.balance)}
@@ -393,7 +396,7 @@ export function DashboardContent({
                 </div>
               ))}
               <div className="flex justify-between items-center px-6 py-3 bg-muted/20">
-                <span className="font-bold text-sm">Total</span>
+                <span className="font-bold text-sm">{t("totalAccounts")}</span>
                 <span className="font-bold tabular-nums text-sm">{fmt(totalBalance)}</span>
               </div>
             </div>
@@ -407,14 +410,14 @@ export function DashboardContent({
               <div className="flex items-center justify-center size-10 rounded-lg bg-muted shrink-0">
                 <Target className="size-5 text-muted-foreground" />
               </div>
-              <p className="font-semibold">Metas de Ahorro</p>
+              <p className="font-semibold">{t("savingGoals")}</p>
             </div>
             <Link href="/savings" className="flex items-center gap-1 text-sm text-primary hover:underline">
-              Ver todas <ChevronRight className="size-4" />
+              {t("viewAllGoals")} <ChevronRight className="size-4" />
             </Link>
           </div>
           {activeGoals.length === 0 ? (
-            <p className="text-muted-foreground text-sm text-center py-10">Sin metas activas</p>
+            <p className="text-muted-foreground text-sm text-center py-10">{t("noActiveGoals")}</p>
           ) : (
             <div className="divide-y">
               {activeGoals.slice(0, 5).map((g) => {
@@ -436,7 +439,7 @@ export function DashboardContent({
                         style={{ "--bar": `${pct}%` } as React.CSSProperties}
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">{pct.toFixed(0)}% completado</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t("completed", { pct: pct.toFixed(0) })}</p>
                   </div>
                 )
               })}
@@ -454,23 +457,23 @@ export function DashboardContent({
                 <Landmark className="size-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="font-semibold">Préstamos Activos</p>
-                <p className="text-xs text-muted-foreground">{activeLoans.length} préstamos</p>
+                <p className="font-semibold">{t("activeLoans")}</p>
+                <p className="text-xs text-muted-foreground">{t("loansCount", { count: activeLoans.length })}</p>
               </div>
             </div>
             <Link href="/loans" className="flex items-center gap-1 text-sm text-primary hover:underline">
-              Ver todos <ChevronRight className="size-4" />
+              {t("viewAllLoans")} <ChevronRight className="size-4" />
             </Link>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-muted-foreground text-xs uppercase tracking-widest">
-                  <th className="text-left px-6 py-3 font-semibold">Nombre</th>
-                  <th className="text-left px-6 py-3 font-semibold">Prestamista</th>
-                  <th className="text-right px-6 py-3 font-semibold">Capital</th>
-                  <th className="text-right px-6 py-3 font-semibold">Saldo pendiente</th>
-                  <th className="text-right px-6 py-3 font-semibold">Pago mensual</th>
+                  <th className="text-left px-6 py-3 font-semibold">{t("loanName")}</th>
+                  <th className="text-left px-6 py-3 font-semibold">{t("lender")}</th>
+                  <th className="text-right px-6 py-3 font-semibold">{t("principal")}</th>
+                  <th className="text-right px-6 py-3 font-semibold">{t("pendingBalance")}</th>
+                  <th className="text-right px-6 py-3 font-semibold">{t("monthlyPayment")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -484,7 +487,7 @@ export function DashboardContent({
                         <div className="h-1.5 rounded-full bg-muted overflow-hidden mt-1.5 w-24">
                           <div className="h-full rounded-full bg-primary transition-all w-(--bar)" style={{ "--bar": `${pct}%` } as React.CSSProperties} />
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{pct.toFixed(0)}% pagado</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{t("paid", { pct: pct.toFixed(0) })}</p>
                       </td>
                       <td className="px-6 py-3 text-muted-foreground">{l.lender}</td>
                       <td className="px-6 py-3 text-right tabular-nums">{fmt(l.principal)}</td>
@@ -496,7 +499,7 @@ export function DashboardContent({
               </tbody>
               <tfoot>
                 <tr className="border-t bg-muted/20">
-                  <td colSpan={3} className="px-6 py-3 font-bold text-sm text-muted-foreground">Deuda total</td>
+                  <td colSpan={3} className="px-6 py-3 font-bold text-sm text-muted-foreground">{t("totalDebt")}</td>
                   <td className="px-6 py-3 text-right tabular-nums font-bold text-red-500">{fmt(totalDebt)}</td>
                   <td />
                 </tr>
@@ -507,7 +510,7 @@ export function DashboardContent({
       )}
 
       {/* ── Tendencias (Pro) ── */}
-      <PremiumGate isPro={isPro} featureName="Gráficas de tendencias">
+      <PremiumGate isPro={isPro} featureName={t("trendFeature")}>
         <TrendCharts transactions={transactions} categories={categories} />
       </PremiumGate>
 
@@ -587,16 +590,17 @@ function StatCard({
 }
 
 function TypeBadge({ type }: { type: Transaction["type"] }) {
-  const map: Record<Transaction["type"], { label: string; className: string }> = {
-    income: { label: "Ingreso", className: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20" },
-    expense: { label: "Gasto", className: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20" },
-    transfer: { label: "Transferencia", className: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" },
-    saving: { label: "Ahorro", className: "bg-primary/10 text-primary border-primary/20" },
+  const t = useTranslations("dashboard")
+  const map: Record<Transaction["type"], { labelKey: string; className: string }> = {
+    income: { labelKey: "typeIncome", className: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20" },
+    expense: { labelKey: "typeExpense", className: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20" },
+    transfer: { labelKey: "typeTransfer", className: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" },
+    saving: { labelKey: "typeSaving", className: "bg-primary/10 text-primary border-primary/20" },
   }
-  const { label, className } = map[type]
+  const { labelKey, className } = map[type]
   return (
     <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium border ${className}`}>
-      {label}
+      {t(labelKey as Parameters<typeof t>[0])}
     </span>
   )
 }
@@ -609,11 +613,8 @@ function budgetBarColor(spent: number, planned: number, warningPct = 80, dangerP
   return "bg-green-500"
 }
 
-function accountTypeLabel(type: string) {
-  const labels: Record<string, string> = {
-    bank: "Banco",
-    cash: "Efectivo",
-    digital_wallet: "Billetera digital",
-  }
-  return labels[type] ?? type
+function AccountTypeLabel({ type }: { type: string }) {
+  const t = useTranslations("dashboard")
+  const key = type === "bank" ? "accountTypeBank" : type === "cash" ? "accountTypeCash" : type === "digital_wallet" ? "accountTypeDigitalWallet" : null
+  return <>{key ? t(key as Parameters<typeof t>[0]) : type}</>
 }
