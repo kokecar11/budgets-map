@@ -5,8 +5,11 @@ from supabase import AsyncClient
 from src.user.models import UserModel
 from src.user.repository import UserRepository
 from src.auth.schemas import (
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
     IdTokenSignInRequest,
     RefreshTokenRequest,
+    ResetPasswordRequest,
     SignInRequest,
     SignUpRequest,
     TokenResponse,
@@ -250,3 +253,49 @@ class AuthService:
             await self.supabase.auth.sign_out()
         except AuthApiError as e:
             raise HTTPException(status_code=e.status or 500, detail=e.message)
+
+    async def forgot_password(self, data: ForgotPasswordRequest) -> ForgotPasswordResponse:
+        """Send a password reset email. Always returns ok to prevent email enumeration."""
+        try:
+            await self.supabase.auth.reset_password_for_email(
+                data.email, {"redirect_to": data.redirect_to}
+            )
+        except AuthApiError:
+            pass
+        return ForgotPasswordResponse()
+
+    async def reset_password(self, data: ResetPasswordRequest) -> TokenResponse:
+        """Set session from recovery tokens, update password, and return a fresh session."""
+        try:
+            response = await self.supabase.auth.set_session(data.access_token, data.refresh_token)
+        except AuthApiError:
+            raise HTTPException(status_code=400, detail="EXPIRED_OR_INVALID_TOKEN")
+
+        if not response.session or not response.user:
+            raise HTTPException(status_code=400, detail="EXPIRED_OR_INVALID_TOKEN")
+
+        session = response.session
+        supabase_user = response.user
+
+        try:
+            await self.supabase.auth.update_user({"password": data.new_password})
+        except AuthApiError as e:
+            raise HTTPException(status_code=e.status or 400, detail=e.message)
+
+        meta = supabase_user.user_metadata or {}
+        local_user = await self._sync_user(
+            supabase_user_id=str(supabase_user.id),
+            email=str(supabase_user.email),
+            name=meta.get("name", str(supabase_user.email).split("@")[0]),
+            currency=meta.get("currency", "COP"),
+        )
+        await self.user_repository.db.commit()
+
+        return self._build_token_response(
+            session=session,
+            user_id=str(supabase_user.id),
+            email=str(supabase_user.email),
+            name=local_user.name,
+            currency=local_user.currency,
+            plan=local_user.plan,
+        )
