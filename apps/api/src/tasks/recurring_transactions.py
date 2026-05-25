@@ -1,11 +1,12 @@
 import asyncio
+import calendar
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date as date_type
 
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy import select
+
 from src.celery_app import celery_app
-from src.core.settings import get_settings
-from src.core.utils import generate_uuid
+from src.core.database import _get_session_maker
 from src.core.metadata_models import load_all_models
 from src.transaction.models import TransactionModel
 
@@ -14,71 +15,93 @@ load_all_models()
 logger = logging.getLogger(__name__)
 
 
-async def _run():
-    settings = get_settings()
-    engine = create_async_engine(settings.DATABASE_URL, echo=False)
-    session_maker = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
-    async with session_maker() as session:
-        try:
-            from sqlalchemy import select
+def _compute_target_day(recurrence_day: int, year: int, month: int) -> int:
+    max_day = calendar.monthrange(year, month)[1]
+    return min(recurrence_day, max_day)
 
+
+def _should_generate_monthly(tx: TransactionModel, today: date_type) -> bool:
+    last = tx.last_generated_at
+    if last is None:
+        last_date = tx.date.date() if tx.date else today
+    else:
+        last_date = last.date() if hasattr(last, "date") else last
+    return today.year > last_date.year or (today.year == last_date.year and today.month > last_date.month)
+
+
+async def _run() -> None:
+    today = datetime.now(tz=timezone.utc).date()
+
+    async with _get_session_maker()() as session:
+        try:
             result = await session.execute(
                 select(TransactionModel).where(
                     TransactionModel.is_recurring == True,  # noqa: E712
-                    TransactionModel.recurrence.in_(["weekly", "monthly"]),
+                    TransactionModel.recurrence == "monthly",
+                    TransactionModel.recurrence_day_of_month != None,  # noqa: E711
                 )
             )
-            recurring = list(result.scalars().all())
-
-            now = datetime.now(tz=timezone.utc)
-            today = now.date()
+            templates = result.scalars().all()
             generated = 0
 
-            for tx in recurring:
-                last = tx.last_generated_at
-                if last is None:
-                    last_date = tx.date.date() if tx.date else today
-                else:
-                    last_date = last.date() if hasattr(last, "date") else last
+            for tx in templates:
+                recurrence_day = tx.recurrence_day_of_month or tx.date.day
+                target_day = _compute_target_day(recurrence_day, today.year, today.month)
 
-                should_generate = False
-                if tx.recurrence == "weekly":
-                    should_generate = (today - last_date).days >= 7
-                elif tx.recurrence == "monthly":
-                    should_generate = (
-                        today.year > last_date.year
-                        or (today.year == last_date.year and today.month > last_date.month)
-                    )
-
-                if not should_generate:
+                if today.day != target_day:
                     continue
 
+                if not _should_generate_monthly(tx, today):
+                    logger.info(
+                        "Skipping template %s — already generated for %s-%s",
+                        tx.id, today.year, today.month,
+                    )
+                    continue
+
+                target_date = datetime(today.year, today.month, target_day, 0, 5, 0, tzinfo=timezone.utc)
+
                 new_tx = TransactionModel(
-                    id=generate_uuid(),
                     user_id=tx.user_id,
                     account_id=tx.account_id,
                     category_id=tx.category_id,
                     type=tx.type,
                     amount=tx.amount,
                     description=tx.description,
-                    date=now,
+                    date=target_date,
                     is_recurring=False,
-                    recurrence=None,
+                    recurrence="none",
                     saving_goal_id=tx.saving_goal_id,
+                    parent_transaction_id=tx.id,
                 )
                 session.add(new_tx)
-                tx.last_generated_at = now
+                await session.flush()
+
+                # Adjust account balance (mirrors TransactionService logic)
+                if tx.account_id and tx.amount is not None:
+                    from src.account.models import AccountModel
+                    acc_result = await session.execute(
+                        select(AccountModel).where(AccountModel.id == tx.account_id)
+                    )
+                    account = acc_result.scalars().first()
+                    if account:
+                        if tx.type == "income":
+                            account.balance += tx.amount
+                        elif tx.type == "expense":
+                            account.balance -= tx.amount
+                        await session.flush()
+
+                tx.last_generated_at = datetime.now(tz=timezone.utc)
                 generated += 1
 
             await session.commit()
-            logger.info(f"Recurring transactions: generated {generated} new transactions")
-        except Exception as e:
+            logger.info("Recurring transactions: generated %d copies", generated)
+
+        except Exception as exc:
             await session.rollback()
-            logger.error(f"Error processing recurring transactions: {e}")
+            logger.error("Error processing recurring transactions: %s", exc, exc_info=True)
             raise
-    await engine.dispose()
 
 
 @celery_app.task(name="src.tasks.recurring_transactions.process_recurring")
-def process_recurring():
+def process_recurring() -> None:
     asyncio.run(_run())

@@ -92,16 +92,23 @@ class TransactionService:
         account_id = obj.account_id
         # Apply update
         obj = await self.repository.update(obj, data)
-        # Reverse old balance effect
-        old_src, old_dst = self._balance_delta(old_type, old_amount, old_transfer_to)
-        await self.account_repository.adjust_balance(account_id, -old_src)
-        if old_transfer_to:
-            await self.account_repository.adjust_balance(old_transfer_to, -old_dst)
-        # Apply new balance effect
-        new_src, new_dst = self._balance_delta(obj.type, obj.amount, obj.transfer_to_account_id)
-        await self.account_repository.adjust_balance(account_id, new_src)
-        if obj.transfer_to_account_id:
-            await self.account_repository.adjust_balance(obj.transfer_to_account_id, new_dst)
+        # Only recalculate balance if fields that affect it actually changed
+        balance_fields_changed = (
+            data.type is not None or
+            data.amount is not None or
+            (hasattr(data, "transfer_to_account_id") and data.transfer_to_account_id is not None)
+        )
+        if balance_fields_changed:
+            # Reverse old balance effect
+            old_src, old_dst = self._balance_delta(old_type, old_amount, old_transfer_to)
+            await self.account_repository.adjust_balance(account_id, -old_src)
+            if old_transfer_to:
+                await self.account_repository.adjust_balance(old_transfer_to, -old_dst)
+            # Apply new balance effect
+            new_src, new_dst = self._balance_delta(obj.type, obj.amount, obj.transfer_to_account_id)
+            await self.account_repository.adjust_balance(account_id, new_src)
+            if obj.transfer_to_account_id:
+                await self.account_repository.adjust_balance(obj.transfer_to_account_id, new_dst)
         return obj
 
     async def delete(self, id: str) -> None:

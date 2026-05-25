@@ -3,13 +3,13 @@ import type { Budget, BudgetCreate, BudgetUpdate, BudgetItem, BudgetItemCreate, 
 
 export const budgetApi = {
   list: (token: string) =>
-    apiFetch<Budget[]>("/api/v1/budgets/", { token }),
+    apiFetch<Budget[]>("/api/v1/budgets", { token }),
 
   get: (id: string, token: string) =>
     apiFetch<Budget>(`/api/v1/budgets/${id}`, { token }),
 
   create: (data: BudgetCreate, token: string) =>
-    apiFetch<Budget>("/api/v1/budgets/", {
+    apiFetch<Budget>("/api/v1/budgets", {
       method: "POST",
       body: JSON.stringify(data),
       token,

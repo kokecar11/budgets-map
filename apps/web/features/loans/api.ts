@@ -3,13 +3,13 @@ import type { Loan, LoanCreate, LoanUpdate, LoanPayment, LoanPaymentCreate, Loan
 
 export const loanApi = {
   list: (token: string) =>
-    apiFetch<Loan[]>("/api/v1/loans/", { token }),
+    apiFetch<Loan[]>("/api/v1/loans", { token }),
 
   get: (id: string, token: string) =>
     apiFetch<Loan>(`/api/v1/loans/${id}`, { token }),
 
   create: (data: LoanCreate, token: string) =>
-    apiFetch<Loan>("/api/v1/loans/", {
+    apiFetch<Loan>("/api/v1/loans", {
       method: "POST",
       body: JSON.stringify(data),
       token,

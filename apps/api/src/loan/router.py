@@ -18,7 +18,7 @@ CurrentUser = Annotated[UserModel, Depends(get_current_user)]
 
 # --- Loans ---
 
-@router.get("/", response_model=List[LoanResponse])
+@router.get("", response_model=List[LoanResponse])
 async def list_loans(
     current_user: CurrentUser,
     service: LoanService = Depends(get_loan_service),
@@ -35,7 +35,7 @@ async def get_loan(
     return await service.get_or_404(id)
 
 
-@router.post("/", response_model=LoanResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=LoanResponse, status_code=status.HTTP_201_CREATED)
 async def create_loan(
     data: LoanCreate,
     current_user: CurrentUser,

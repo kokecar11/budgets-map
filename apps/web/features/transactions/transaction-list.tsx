@@ -4,7 +4,7 @@ import { useState, useMemo } from "react"
 import {
   Plus, Pencil, Trash2,
   ArrowUpCircle, ArrowDownCircle, ArrowRightLeft, PiggyBank, ReceiptText,
-  Filter, X, Download, Loader2, ChevronLeft, ChevronRight,
+  Filter, X, Download, Loader2, ChevronLeft, ChevronRight, RefreshCw,
 } from "lucide-react"
 import { useLocale, useTranslations } from "next-intl"
 import type { ExportCsvLabels } from "./export-csv"
@@ -457,6 +457,15 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
                               <span className="text-xs text-muted-foreground" suppressHydrationWarning>
                                 {new Date(tx.date).toLocaleTimeString(LOCALE_TAG[locale], { hour: "2-digit", minute: "2-digit" })}
                               </span>
+                              {tx.is_recurring && (
+                                <>
+                                  <span className="text-xs text-muted-foreground">·</span>
+                                  <Badge variant="secondary" className="text-xs h-5 px-2 gap-1">
+                                    <RefreshCw className="size-2.5" />
+                                    {t("recurringBadge")}
+                                  </Badge>
+                                </>
+                              )}
                             </div>
                           </div>
 

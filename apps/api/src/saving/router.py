@@ -12,7 +12,7 @@ router = APIRouter(prefix="/saving-goals", tags=["Saving Goals"])
 CurrentUser = Annotated[UserModel, Depends(get_current_user)]
 
 
-@router.get("/", response_model=List[SavingGoalResponse])
+@router.get("", response_model=List[SavingGoalResponse])
 async def list_saving_goals(
     current_user: CurrentUser,
     service: SavingGoalService = Depends(get_saving_goal_service),
@@ -29,7 +29,7 @@ async def get_saving_goal(
     return await service.get_or_404(id)
 
 
-@router.post("/", response_model=SavingGoalResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=SavingGoalResponse, status_code=status.HTTP_201_CREATED)
 async def create_saving_goal(
     data: SavingGoalCreate,
     current_user: CurrentUser,
