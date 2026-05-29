@@ -27,6 +27,8 @@ class TransactionService:
             return (+amount, 0)
         elif tx_type == "transfer":
             return (-amount, +amount)
+        elif tx_type == "credit_card_charge":
+            return (0, 0)
         else:  # expense, saving
             return (-amount, 0)
 
@@ -78,7 +80,8 @@ class TransactionService:
     async def create(self, data: TransactionCreate) -> TransactionModel:
         obj = await self.repository.create(data)
         src, dst = self._balance_delta(data.type, data.amount, data.transfer_to_account_id)
-        await self.account_repository.adjust_balance(data.account_id, src)
+        if data.account_id:
+            await self.account_repository.adjust_balance(data.account_id, src)
         if data.type == "transfer" and data.transfer_to_account_id:
             await self.account_repository.adjust_balance(data.transfer_to_account_id, dst)
         return obj
@@ -101,12 +104,14 @@ class TransactionService:
         if balance_fields_changed:
             # Reverse old balance effect
             old_src, old_dst = self._balance_delta(old_type, old_amount, old_transfer_to)
-            await self.account_repository.adjust_balance(account_id, -old_src)
+            if account_id:
+                await self.account_repository.adjust_balance(account_id, -old_src)
             if old_transfer_to:
                 await self.account_repository.adjust_balance(old_transfer_to, -old_dst)
             # Apply new balance effect
             new_src, new_dst = self._balance_delta(obj.type, obj.amount, obj.transfer_to_account_id)
-            await self.account_repository.adjust_balance(account_id, new_src)
+            if account_id:
+                await self.account_repository.adjust_balance(account_id, new_src)
             if obj.transfer_to_account_id:
                 await self.account_repository.adjust_balance(obj.transfer_to_account_id, new_dst)
         return obj
@@ -121,7 +126,8 @@ class TransactionService:
         await self.repository.delete(obj)
         # Reverse balance effect
         src, dst = self._balance_delta(tx_type, amount, transfer_to)
-        await self.account_repository.adjust_balance(account_id, -src)
+        if account_id:
+            await self.account_repository.adjust_balance(account_id, -src)
         if transfer_to:
             await self.account_repository.adjust_balance(transfer_to, -dst)
 

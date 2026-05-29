@@ -1,8 +1,8 @@
 export interface Transaction {
   id: string
   user_id: string
-  account_id: string
-  type: "income" | "expense" | "transfer" | "saving"
+  account_id: string | null
+  type: "income" | "expense" | "transfer" | "saving" | "credit_card_charge"
   amount: number
   date: string
   category_id?: string | null
@@ -11,6 +11,7 @@ export interface Transaction {
   recurrence?: "none" | "weekly" | "monthly" | null
   transfer_to_account_id?: string | null
   saving_goal_id?: string | null
+  credit_card_transaction_id?: string | null
   recurrence_day_of_month?: number | null
   parent_transaction_id?: string | null
   created_at?: string
@@ -23,8 +24,8 @@ export interface TransactionPage {
 }
 
 export interface TransactionCreate {
-  account_id: string
-  type: "income" | "expense" | "transfer" | "saving"
+  account_id?: string
+  type: "income" | "expense" | "transfer" | "saving" | "credit_card_charge"
   amount: number
   date: string
   category_id?: string
@@ -35,11 +36,12 @@ export interface TransactionCreate {
   saving_goal_id?: string
   loan_payment_id?: string
   credit_card_payment_id?: string
+  credit_card_transaction_id?: string
 }
 
 export interface TransactionUpdate {
   category_id?: string
-  type?: "income" | "expense" | "transfer" | "saving"
+  type?: "income" | "expense" | "transfer" | "saving" | "credit_card_charge"
   amount?: number
   description?: string
   date?: string

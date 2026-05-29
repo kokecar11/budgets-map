@@ -16,8 +16,8 @@ def _to_utc(data: Any) -> Any:
 
 
 class TransactionBase(BaseModel):
-    account_id: str
-    type: Literal["income", "expense", "transfer", "saving"]
+    account_id: Optional[str] = None
+    type: Literal["income", "expense", "transfer", "saving", "credit_card_charge"]
     amount: float
     date: datetime
     category_id: Optional[str] = None
@@ -28,6 +28,7 @@ class TransactionBase(BaseModel):
     credit_card_payment_id: Optional[str] = None
     loan_payment_id: Optional[str] = None
     saving_goal_id: Optional[str] = None
+    credit_card_transaction_id: Optional[str] = None
     recurrence_day_of_month: Optional[int] = None
     parent_transaction_id: Optional[str] = None
 
@@ -43,7 +44,7 @@ class TransactionCreate(TransactionBase):
 
 class TransactionUpdate(BaseModel):
     category_id: Optional[str] = None
-    type: Optional[Literal["income", "expense", "transfer", "saving"]] = None
+    type: Optional[Literal["income", "expense", "transfer", "saving", "credit_card_charge"]] = None
     amount: Optional[float] = None
     description: Optional[str] = None
     date: Optional[datetime] = None

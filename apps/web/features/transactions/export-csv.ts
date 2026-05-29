@@ -15,6 +15,7 @@ export interface ExportCsvLabels {
   typeExpense: string
   typeTransfer: string
   typeSaving: string
+  typeCreditCardCharge: string
 }
 
 export function exportTransactionsCSV(
@@ -33,6 +34,7 @@ export function exportTransactionsCSV(
     expense: labels.typeExpense,
     transfer: labels.typeTransfer,
     saving: labels.typeSaving,
+    credit_card_charge: labels.typeCreditCardCharge,
   }
 
   const headers = [labels.date, labels.type, labels.description, labels.account, labels.category, labels.amount]
@@ -41,7 +43,7 @@ export function exportTransactionsCSV(
     new Date(tx.date).toLocaleDateString(localeTag, { day: "2-digit", month: "2-digit", year: "numeric" }),
     typeLabels[tx.type] ?? tx.type,
     tx.description ?? "",
-    accountMap[tx.account_id] ?? tx.account_id,
+    tx.account_id ? (accountMap[tx.account_id] ?? tx.account_id) : labels.typeCreditCardCharge,
     tx.category_id ? (categoryMap[tx.category_id] ?? tx.category_id) : "",
     tx.type === "expense" ? `-${tx.amount}` : `${tx.amount}`,
   ])

@@ -25,7 +25,8 @@ class TransactionModel(TimestampMixin, Base):
                 (CASE WHEN transfer_to_account_id IS NOT NULL THEN 1 ELSE 0 END) +
                 (CASE WHEN credit_card_payment_id IS NOT NULL THEN 1 ELSE 0 END) +
                 (CASE WHEN loan_payment_id IS NOT NULL THEN 1 ELSE 0 END) +
-                (CASE WHEN saving_goal_id IS NOT NULL THEN 1 ELSE 0 END)
+                (CASE WHEN saving_goal_id IS NOT NULL THEN 1 ELSE 0 END) +
+                (CASE WHEN credit_card_transaction_id IS NOT NULL THEN 1 ELSE 0 END)
             ) <= 1""",
             name="chk_transaction_single_reference",
         ),
@@ -34,7 +35,7 @@ class TransactionModel(TimestampMixin, Base):
 
     id = Column(String, primary_key=True, index=True, default=generate_uuid)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
-    account_id = Column(String, ForeignKey("accounts.id"), nullable=False)
+    account_id = Column(String, ForeignKey("accounts.id"), nullable=True)
     category_id = Column(String, ForeignKey("categories.id"), nullable=True)
     type = Column(String, nullable=False)  # ENUM: income|expense|transfer|saving
     amount = Column(Float, nullable=False)
@@ -53,6 +54,9 @@ class TransactionModel(TimestampMixin, Base):
     )
     loan_payment_id = Column(String, ForeignKey("loan_payments.id"), nullable=True)
     saving_goal_id = Column(String, ForeignKey("saving_goals.id"), nullable=True)
+    credit_card_transaction_id = Column(
+        String, ForeignKey("credit_card_transactions.id"), nullable=True
+    )
 
     created_at = Column(DateTime(timezone=True), nullable=True, server_default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=True)
@@ -75,3 +79,8 @@ class TransactionModel(TimestampMixin, Base):
     loan_payment = relationship("LoanPaymentModel", back_populates="transaction")
     saving_goal = relationship("SavingGoalModel", back_populates="contributions")
     budget_items = relationship("BudgetItemModel", back_populates="transaction")
+    credit_card_transaction = relationship(
+        "CreditCardTransactionModel",
+        back_populates="transaction",
+        foreign_keys="[TransactionModel.credit_card_transaction_id]",
+    )
