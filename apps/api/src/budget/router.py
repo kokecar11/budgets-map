@@ -7,6 +7,7 @@ from src.budget.schemas import (
     BudgetCreate, BudgetUpdate, BudgetResponse,
     BudgetItemCreate, BudgetItemUpdate, BudgetItemResponse,
     BudgetItemWithActual, BudgetSummaryResponse, BudgetItemLinkRequest,
+    BudgetItemBulkLinkRequest,
 )
 from src.budget.services import BudgetService, BudgetItemService
 from src.budget.dependencies import get_budget_service, get_budget_item_service, get_transaction_repository
@@ -106,6 +107,17 @@ async def link_transaction_to_item(
     transaction_repo: TransactionRepository = Depends(get_transaction_repository),
 ):
     return await service.link_transaction(id, data.transaction_id, current_user.id, transaction_repo)
+
+
+@router.post("/items/{id}/transactions/bulk", response_model=BudgetItemWithActual)
+async def bulk_link_transactions_to_item(
+    id: str,
+    data: BudgetItemBulkLinkRequest,
+    current_user: CurrentUser,
+    service: BudgetItemService = Depends(get_budget_item_service),
+    transaction_repo: TransactionRepository = Depends(get_transaction_repository),
+):
+    return await service.bulk_link_transactions(id, data.transaction_ids, current_user.id, transaction_repo)
 
 
 @router.delete("/items/{id}/transactions/{tx_id}", response_model=BudgetItemWithActual)

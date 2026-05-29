@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useSession } from "next-auth/react"
-import { Plus, LayoutGrid, CalendarDays, ChevronRight, Trash2 } from "lucide-react"
+import { Plus, LayoutGrid, CalendarDays, ChevronRight, Trash2, Pencil } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { useTranslations } from "next-intl"
@@ -30,10 +30,16 @@ export function BudgetList({ initialBudgets }: BudgetListProps) {
   const t = useTranslations("budgets")
   const [budgets, setBudgets] = useState<Budget[]>(initialBudgets)
   const [openForm, setOpenForm] = useState(false)
+  const [editingBudget, setEditingBudget] = useState<Budget | null>(null)
 
   function handleCreated(budget: Budget) {
     setBudgets((prev) => [budget, ...prev])
     setOpenForm(false)
+  }
+
+  function handleUpdated(budget: Budget) {
+    setBudgets((prev) => prev.map((b) => (b.id === budget.id ? budget : b)))
+    setEditingBudget(null)
   }
 
   async function handleDelete(id: string) {
@@ -131,6 +137,16 @@ export function BudgetList({ initialBudgets }: BudgetListProps) {
                 <Button
                   size="icon"
                   variant="ghost"
+                  className="size-8 text-muted-foreground hover:text-primary shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => setEditingBudget(budget)}
+                  title={t("editBudget")}
+                >
+                  <Pencil className="size-4" />
+                </Button>
+
+                <Button
+                  size="icon"
+                  variant="ghost"
                   className="size-8 text-muted-foreground hover:text-destructive shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                   onClick={() => handleDelete(budget.id)}
                 >
@@ -156,6 +172,22 @@ export function BudgetList({ initialBudgets }: BudgetListProps) {
             onSuccess={handleCreated}
             onCancel={() => setOpenForm(false)}
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editingBudget)} onOpenChange={(open) => { if (!open) setEditingBudget(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("dialogTitleEdit")}</DialogTitle>
+            <DialogDescription>{t("dialogDescEdit")}</DialogDescription>
+          </DialogHeader>
+          {editingBudget && (
+            <BudgetForm
+              initialValues={editingBudget}
+              onSuccess={handleUpdated}
+              onCancel={() => setEditingBudget(null)}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

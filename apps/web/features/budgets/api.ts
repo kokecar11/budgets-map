@@ -63,6 +63,13 @@ export const budgetItemApi = {
       token,
     }),
 
+  bulkLinkTransactions: (itemId: string, txIds: string[], token: string) =>
+    apiFetch<BudgetItem>(`/api/v1/budgets/items/${itemId}/transactions/bulk`, {
+      method: "POST",
+      body: JSON.stringify({ transaction_ids: txIds }),
+      token,
+    }),
+
   unlinkTransaction: (itemId: string, txId: string, token: string) =>
     apiFetch<BudgetItem>(`/api/v1/budgets/items/${itemId}/transactions/${txId}`, {
       method: "DELETE",
