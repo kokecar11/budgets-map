@@ -55,6 +55,13 @@ export interface CreditCardTransaction {
   updated_at?: string
 }
 
+export interface CreditCardTransactionUpdate {
+  category_id?: string
+  description?: string
+  amount?: number
+  date?: string
+}
+
 export interface CreditCardTransactionCreate {
   credit_card_id: string
   category_id: string

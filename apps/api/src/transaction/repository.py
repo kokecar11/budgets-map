@@ -110,6 +110,14 @@ class TransactionRepository:
         )
         return result.all()
 
+    async def get_by_credit_card_transaction_id(self, cc_transaction_id: str) -> Optional[TransactionModel]:
+        result = await self.db.execute(
+            select(TransactionModel).where(
+                TransactionModel.credit_card_transaction_id == cc_transaction_id
+            )
+        )
+        return result.scalars().first()
+
     async def get_by_account(self, account_id: str) -> List[TransactionModel]:
         result = await self.db.execute(
             select(TransactionModel).where(TransactionModel.account_id == account_id)

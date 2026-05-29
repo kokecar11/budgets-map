@@ -22,6 +22,7 @@ import { budgetItemApi } from "./api"
 import type { BudgetItem, Budget } from "./types"
 import type { Category } from "@/features/categories/types"
 import type { Transaction } from "@/features/transactions/types"
+import type { Account } from "@/features/accounts/types"
 
 interface BudgetItemsListProps {
   budgetId: string
@@ -30,9 +31,10 @@ interface BudgetItemsListProps {
   categories: Category[]
   transactions: Transaction[]
   budget: Budget
+  accounts: Account[]
 }
 
-export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, categories, transactions, budget }: BudgetItemsListProps) {
+export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, categories, transactions, budget, accounts }: BudgetItemsListProps) {
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]))
   const { data: session } = useSession()
   const t = useTranslations("budgets")
@@ -229,6 +231,8 @@ export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, cate
           item={linkTarget}
           transactions={transactions}
           budget={budget}
+          accounts={accounts}
+          categories={categories}
           onLink={handleLink}
         />
       )}
