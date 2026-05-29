@@ -57,6 +57,7 @@ class TransactionModel(TimestampMixin, Base):
     credit_card_transaction_id = Column(
         String, ForeignKey("credit_card_transactions.id"), nullable=True
     )
+    budget_item_id = Column(String, ForeignKey("budget_items.id", ondelete="SET NULL"), nullable=True)
 
     created_at = Column(DateTime(timezone=True), nullable=True, server_default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=True)
@@ -78,7 +79,11 @@ class TransactionModel(TimestampMixin, Base):
     )
     loan_payment = relationship("LoanPaymentModel", back_populates="transaction")
     saving_goal = relationship("SavingGoalModel", back_populates="contributions")
-    budget_items = relationship("BudgetItemModel", back_populates="transaction")
+    budget_item = relationship(
+        "BudgetItemModel",
+        back_populates="transactions",
+        foreign_keys="[TransactionModel.budget_item_id]",
+    )
     credit_card_transaction = relationship(
         "CreditCardTransactionModel",
         back_populates="transaction",

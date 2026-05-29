@@ -1,3 +1,5 @@
+import type { Transaction } from "@/features/transactions/types"
+
 export interface Budget {
   id: string
   user_id: string
@@ -34,7 +36,7 @@ export interface BudgetItem {
   planned_amount: number
   is_paid: boolean
   category_id?: string | null
-  transaction_id?: string | null
+  transactions: Transaction[]
   actual_amount?: number | null
   difference?: number | null
   created_at?: string
@@ -61,5 +63,4 @@ export interface BudgetItemUpdate {
   planned_amount?: number
   is_paid?: boolean
   category_id?: string
-  transaction_id?: string | null
 }

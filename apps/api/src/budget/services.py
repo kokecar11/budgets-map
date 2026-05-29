@@ -4,15 +4,18 @@ from src.budget.schemas import (
     BudgetCreate, BudgetUpdate, BudgetItemCreate, BudgetItemUpdate,
     BudgetItemResponse, BudgetItemWithActual, BudgetSummaryResponse, AlertStatus,
 )
+from src.transaction.schemas import TransactionResponse
 from src.budget.models import BudgetModel, BudgetItemModel
 from src.transaction.repository import TransactionRepository
 
 
 def _to_with_actual(item) -> BudgetItemWithActual:
-    actual = item.transaction.amount if item.transaction else None
+    txs = item.transactions or []
+    actual = sum(t.amount for t in txs) if txs else None
     difference = (item.planned_amount - actual) if actual is not None else None
     return BudgetItemWithActual(
         **BudgetItemResponse.model_validate(item).model_dump(),
+        transactions=[TransactionResponse.model_validate(t) for t in txs],
         actual_amount=actual,
         difference=difference,
     )
@@ -90,21 +93,35 @@ class BudgetItemService:
     async def create(self, data: BudgetItemCreate) -> BudgetItemModel:
         return await self.repository.create(data)
 
-    async def update(self, id: str, data: BudgetItemUpdate, user_id: str = "", transaction_repo: TransactionRepository = None) -> BudgetItemWithActual:
+    async def update(self, id: str, data: BudgetItemUpdate) -> BudgetItemWithActual:
         obj = await self.get_or_404(id)
-        update_dict = data.model_dump(exclude_unset=True)
-        if "transaction_id" in update_dict and transaction_repo is not None:
-            if update_dict["transaction_id"] is not None:
-                txn = await transaction_repo.get_by_id(update_dict["transaction_id"])
-                if txn is None or str(txn.user_id) != str(user_id):
-                    raise HTTPException(status_code=403, detail="Transaction does not belong to this user")
-                update_dict["is_paid"] = True
-            else:
-                update_dict["is_paid"] = False
-            data = BudgetItemUpdate(**update_dict)
         await self.repository.update(obj, data)
         updated_item = await self.repository.get_by_id(id)
         return _to_with_actual(updated_item)
+
+    async def link_transaction(self, item_id: str, tx_id: str, user_id: str, tx_repo: TransactionRepository) -> BudgetItemWithActual:
+        item = await self.get_or_404(item_id)
+        tx = await tx_repo.get_by_id(tx_id)
+        if tx is None or str(tx.user_id) != str(user_id):
+            raise HTTPException(status_code=403, detail="Transaction does not belong to this user")
+        tx.budget_item_id = item_id
+        item.is_paid = True
+        await self.repository.db.flush()
+        updated = await self.repository.get_by_id(item_id)
+        return _to_with_actual(updated)
+
+    async def unlink_transaction(self, item_id: str, tx_id: str, tx_repo: TransactionRepository) -> BudgetItemWithActual:
+        tx = await tx_repo.get_by_id(tx_id)
+        if tx and str(tx.budget_item_id) == str(item_id):
+            tx.budget_item_id = None
+            await self.repository.db.flush()
+        item = await self.repository.get_by_id(item_id)
+        if not item:
+            raise HTTPException(status_code=404, detail="Budget item not found")
+        if not item.transactions:
+            item.is_paid = False
+            await self.repository.db.flush()
+        return _to_with_actual(item)
 
     async def delete(self, id: str) -> None:
         obj = await self.get_or_404(id)

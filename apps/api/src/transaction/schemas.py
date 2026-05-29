@@ -29,6 +29,7 @@ class TransactionBase(BaseModel):
     loan_payment_id: Optional[str] = None
     saving_goal_id: Optional[str] = None
     credit_card_transaction_id: Optional[str] = None
+    budget_item_id: Optional[str] = None
     recurrence_day_of_month: Optional[int] = None
     parent_transaction_id: Optional[str] = None
 

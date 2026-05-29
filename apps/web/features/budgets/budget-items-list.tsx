@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useSession } from "next-auth/react"
-import { Plus, Trash2, CheckCircle2, Circle, Copy, Link } from "lucide-react"
+import { Plus, Trash2, CheckCircle2, Circle, Copy, Unlink } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@workspace/ui/components/button"
@@ -101,18 +101,24 @@ export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, cate
     setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
   }
 
-  async function handleLink(item: BudgetItem, transactionId: string | null) {
+  async function handleAddLink(item: BudgetItem, transactionId: string) {
     try {
-      const updated = await budgetItemApi.update(
-        item.id,
-        { transaction_id: transactionId },
-        session?.accessToken ?? ""
-      )
+      const updated = await budgetItemApi.linkTransaction(item.id, transactionId, session?.accessToken ?? "")
       setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
-      toast.success(transactionId ? t("transactionLinked") : t("transactionUnlinked"))
+      toast.success(t("transactionAdded"))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("errorLinking"))
       throw err
+    }
+  }
+
+  async function handleUnlink(item: BudgetItem, txId: string) {
+    try {
+      const updated = await budgetItemApi.unlinkTransaction(item.id, txId, session?.accessToken ?? "")
+      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+      toast.success(t("transactionUnlinked"))
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("errorLinking"))
     }
   }
 
@@ -153,56 +159,80 @@ export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, cate
         <div className="flex flex-col gap-2">
           {items.map((item) => (
             <Card key={item.id}>
-              <CardContent className="flex items-center gap-3 p-3">
-                <button
-                  onClick={() => handleTogglePaid(item)}
-                  className="text-muted-foreground hover:text-primary shrink-0"
-                >
-                  {item.is_paid ? (
-                    <CheckCircle2 className="size-5 text-green-500" />
-                  ) : (
-                    <Circle className="size-5" />
-                  )}
-                </button>
-                <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
-                  <div className="min-w-0">
-                    <span className={`text-sm truncate ${item.is_paid ? "line-through text-muted-foreground" : ""}`}>
-                      {item.description}
+              <CardContent className="flex flex-col gap-2 p-3">
+                {/* Main row */}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => handleTogglePaid(item)}
+                    className="text-muted-foreground hover:text-primary shrink-0"
+                  >
+                    {item.is_paid ? (
+                      <CheckCircle2 className="size-5 text-green-500" />
+                    ) : (
+                      <Circle className="size-5" />
+                    )}
+                  </button>
+                  <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
+                    <div className="min-w-0">
+                      <span className={`text-sm truncate ${item.is_paid ? "line-through text-muted-foreground" : ""}`}>
+                        {item.description}
+                      </span>
+                      {item.category_id && categoryMap[item.category_id] && (
+                        <p className="text-xs text-muted-foreground">{categoryMap[item.category_id]}</p>
+                      )}
+                      {item.actual_amount != null && (
+                        <p className="text-xs text-muted-foreground">
+                          {t("real")}: <strong>{item.actual_amount.toLocaleString()}</strong>
+                          {item.difference != null && (
+                            <span className={item.difference >= 0 ? " text-green-600" : " text-red-600"}>
+                              {" "}({item.difference >= 0 ? "+" : ""}{item.difference.toLocaleString()})
+                            </span>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-sm font-medium shrink-0">
+                      {item.planned_amount.toLocaleString()}
                     </span>
-                    {item.category_id && categoryMap[item.category_id] && (
-                      <p className="text-xs text-muted-foreground">{categoryMap[item.category_id]}</p>
-                    )}
-                    {item.actual_amount != null && (
-                      <p className="text-xs text-muted-foreground">
-                        {t("real")}: <strong>{item.actual_amount.toLocaleString()}</strong>
-                        {item.difference != null && (
-                          <span className={item.difference >= 0 ? " text-green-600" : " text-red-600"}>
-                            {" "}({item.difference >= 0 ? "+" : ""}{item.difference.toLocaleString()})
-                          </span>
-                        )}
-                      </p>
-                    )}
                   </div>
-                  <span className="text-sm font-medium shrink-0">
-                    {item.planned_amount.toLocaleString()}
-                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-primary shrink-0 h-7 w-7"
+                    onClick={() => setLinkTarget(item)}
+                    title={t("addTransaction")}
+                  >
+                    <Plus className="size-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive shrink-0 h-7 w-7"
+                    onClick={() => handleDelete(item.id)}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-muted-foreground hover:text-primary shrink-0 h-7 w-7"
-                  onClick={() => setLinkTarget(item)}
-                >
-                  <Link className="size-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive hover:text-destructive shrink-0 h-7 w-7"
-                  onClick={() => handleDelete(item.id)}
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
+
+                {/* Linked transactions sub-rows */}
+                {item.transactions && item.transactions.length > 0 && (
+                  <div className="pl-8 flex flex-col gap-0.5 border-t pt-2">
+                    {item.transactions.map((tx) => (
+                      <div key={tx.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="flex-1 truncate">{tx.description ?? tCommon("noData")}</span>
+                        <span className="font-medium text-foreground shrink-0">{tx.amount.toLocaleString()}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleUnlink(item, tx.id)}
+                          className="hover:text-destructive shrink-0"
+                          title={t("unlink")}
+                        >
+                          <Unlink className="size-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -233,7 +263,7 @@ export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, cate
           budget={budget}
           accounts={accounts}
           categories={categories}
-          onLink={handleLink}
+          onAdd={handleAddLink}
         />
       )}
     </div>
