@@ -88,6 +88,10 @@ class CreditCardPeriodResponse(CreditCardPeriodBase):
     model_config = {"from_attributes": True}
 
 
+class MigrateTransactionsResponse(BaseModel):
+    count: int
+
+
 # --- CreditCardTransaction ---
 
 class CreditCardTransactionBase(BaseModel):

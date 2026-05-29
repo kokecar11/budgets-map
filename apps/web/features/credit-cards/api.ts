@@ -2,7 +2,7 @@ import { apiFetch } from "@/lib/api"
 import type {
   CreditCard, CreditCardCreate, CreditCardUpdate,
   CreditCardPeriod, CreditCardPeriodCreate,
-  CreditCardTransaction, CreditCardTransactionCreate,
+  CreditCardTransaction, CreditCardTransactionCreate, CreditCardTransactionUpdate,
   CreditCardPayment, CreditCardPaymentCreate,
 } from "./types"
 
@@ -53,6 +53,19 @@ export const creditCardTransactionApi = {
   create: (creditCardId: string, data: CreditCardTransactionCreate, token: string) =>
     apiFetch<CreditCardTransaction>(`/api/v1/credit-cards/${creditCardId}/transactions`, {
       method: "POST",
+      body: JSON.stringify(data),
+      token,
+    }),
+
+  migrate: (creditCardId: string, token: string) =>
+    apiFetch<{ count: number }>(`/api/v1/credit-cards/${creditCardId}/transactions/migrate`, {
+      method: "POST",
+      token,
+    }),
+
+  update: (id: string, data: CreditCardTransactionUpdate, token: string) =>
+    apiFetch<CreditCardTransaction>(`/api/v1/credit-cards/transactions/${id}`, {
+      method: "PATCH",
       body: JSON.stringify(data),
       token,
     }),

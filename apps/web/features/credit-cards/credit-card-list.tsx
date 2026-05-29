@@ -20,11 +20,13 @@ import {
 
 import { CreditCardForm } from "./credit-card-form"
 import { creditCardApi } from "./api"
-import type { CreditCard, CreditCardPeriod } from "./types"
+import type { CreditCard, CreditCardPeriod, CreditCardTransaction, CreditCardPayment } from "./types"
 
 interface CreditCardListProps {
   initialCards: CreditCard[]
   periodsByCard: Record<string, CreditCardPeriod[]>
+  chargesByCard: Record<string, CreditCardTransaction[]>
+  paymentsByCard: Record<string, CreditCardPayment[]>
 }
 
 function latestPeriod(periods: CreditCardPeriod[]): CreditCardPeriod | null {
@@ -34,7 +36,7 @@ function latestPeriod(periods: CreditCardPeriod[]): CreditCardPeriod | null {
   )[0] ?? null
 }
 
-export function CreditCardList({ initialCards, periodsByCard }: CreditCardListProps) {
+export function CreditCardList({ initialCards, periodsByCard, chargesByCard, paymentsByCard }: CreditCardListProps) {
   const { data: session } = useSession()
   const t = useTranslations("creditCards")
   const [cards, setCards] = useState<CreditCard[]>(initialCards)
@@ -65,8 +67,9 @@ export function CreditCardList({ initialCards, periodsByCard }: CreditCardListPr
 
   const totalLimit = cards.reduce((sum, c) => sum + c.credit_limit, 0)
   const totalDebt = cards.reduce((sum, c) => {
-    const period = latestPeriod(periodsByCard[c.id] ?? [])
-    return sum + (period?.closing_balance ?? 0)
+    const charged = (chargesByCard[c.id] ?? []).reduce((s, ch) => s + ch.amount, 0)
+    const paid = (paymentsByCard[c.id] ?? []).reduce((s, p) => s + p.amount, 0)
+    return sum + Math.max(0, charged - paid)
   }, 0)
   const avgRate = cards.length > 0
     ? cards.reduce((sum, c) => sum + c.interest_rate, 0) / cards.length
@@ -128,8 +131,9 @@ export function CreditCardList({ initialCards, periodsByCard }: CreditCardListPr
         ) : (
           <div className="divide-y">
             {cards.map((card) => {
-              const period = latestPeriod(periodsByCard[card.id] ?? [])
-              const balance = period?.closing_balance ?? 0
+              const charged = (chargesByCard[card.id] ?? []).reduce((s, c) => s + c.amount, 0)
+              const paid = (paymentsByCard[card.id] ?? []).reduce((s, p) => s + p.amount, 0)
+              const balance = Math.max(0, charged - paid)
               const available = Math.max(0, card.credit_limit - balance)
               const usagePct = card.credit_limit > 0
                 ? Math.min(100, (balance / card.credit_limit) * 100)

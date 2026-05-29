@@ -19,22 +19,26 @@ import type { Category } from "@/features/categories/types"
 interface CreditCardChargeFormProps {
   creditCardId: string
   categories: Category[]
+  initialCharge?: CreditCardTransaction
   onSuccess: (charge: CreditCardTransaction) => void
   onCancel: () => void
 }
 
-export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCancel }: CreditCardChargeFormProps) {
+export function CreditCardChargeForm({ creditCardId, categories, initialCharge, onSuccess, onCancel }: CreditCardChargeFormProps) {
   const { data: session } = useSession()
   const t = useTranslations("creditCards")
   const tCommon = useTranslations("common")
+  const isEdit = !!initialCharge
   const expenseCategories = categories.filter((c) => c.type === "expense")
 
   const form = useForm({
     defaultValues: {
-      description: "",
-      amount: "",
-      date: new Date().toISOString().split("T")[0],
-      category_id: "",
+      description: initialCharge?.description ?? "",
+      amount: initialCharge ? String(initialCharge.amount) : "",
+      date: initialCharge
+        ? new Date(initialCharge.date).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0],
+      category_id: initialCharge?.category_id ?? "",
       installments: "1",
       interest_rate: "0",
     },
@@ -43,24 +47,40 @@ export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCa
         const token = session?.accessToken ?? ""
         const amount = Number(value.amount)
         const isoDate = new Date(value.date + "T00:00:00").toISOString()
-        const charge = await creditCardTransactionApi.create(
-          creditCardId,
-          {
-            credit_card_id: creditCardId,
-            description: value.description,
-            amount,
-            date: isoDate,
-            category_id: value.category_id,
-            installments: Number(value.installments) || 1,
-            installment_number: 1,
-            interest_rate: Number(value.interest_rate) || undefined,
-          },
-          token
-        )
-        toast.success(t("chargeRegistered"))
-        onSuccess(charge)
+
+        if (isEdit && initialCharge) {
+          const charge = await creditCardTransactionApi.update(
+            initialCharge.id,
+            {
+              description: value.description,
+              amount,
+              date: isoDate,
+              category_id: value.category_id,
+            },
+            token
+          )
+          toast.success(t("chargeUpdated"))
+          onSuccess(charge)
+        } else {
+          const charge = await creditCardTransactionApi.create(
+            creditCardId,
+            {
+              credit_card_id: creditCardId,
+              description: value.description,
+              amount,
+              date: isoDate,
+              category_id: value.category_id,
+              installments: Number(value.installments) || 1,
+              installment_number: 1,
+              interest_rate: Number(value.interest_rate) || undefined,
+            },
+            token
+          )
+          toast.success(t("chargeRegistered"))
+          onSuccess(charge)
+        }
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : t("errorRegisteringCharge"))
+        toast.error(err instanceof Error ? err.message : isEdit ? t("errorUpdatingCharge") : t("errorRegisteringCharge"))
       }
     },
   })
@@ -150,8 +170,8 @@ export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCa
           )}
         </form.Field>
 
-        {/* Cuotas e interés en grid */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Cuotas e interés — solo en modo creación */}
+        {!isEdit && <div className="grid grid-cols-2 gap-4">
           <form.Field name="installments">
             {(field) => (
               <Field>
@@ -187,34 +207,36 @@ export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCa
               </Field>
             )}
           </form.Field>
-        </div>
+        </div>}
 
-        {/* Tabla de amortización interactiva */}
-        <form.Subscribe selector={(s) => ({
-          amount: s.values.amount,
-          installments: s.values.installments,
-          interest_rate: s.values.interest_rate,
-        })}>
-          {({ amount, installments, interest_rate }) => {
-            const a = Number(amount)
-            const n = Number(installments) || 1
-            const r = Number(interest_rate)
-            if (a <= 0 || n <= 1) return null
-            return (
-              <div className="flex flex-col gap-1.5">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  {t("amortizationTableLabel")}
-                </p>
-                <AmortizationTable
-                  principal={a}
-                  annualRateEA={r}
-                  installments={n}
-                  startDate={new Date()}
-                />
-              </div>
-            )
-          }}
-        </form.Subscribe>
+        {/* Tabla de amortización interactiva — solo en modo creación */}
+        {!isEdit && (
+          <form.Subscribe selector={(s) => ({
+            amount: s.values.amount,
+            installments: s.values.installments,
+            interest_rate: s.values.interest_rate,
+          })}>
+            {({ amount, installments, interest_rate }) => {
+              const a = Number(amount)
+              const n = Number(installments) || 1
+              const r = Number(interest_rate)
+              if (a <= 0 || n <= 1) return null
+              return (
+                <div className="flex flex-col gap-1.5">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    {t("amortizationTableLabel")}
+                  </p>
+                  <AmortizationTable
+                    principal={a}
+                    annualRateEA={r}
+                    installments={n}
+                    startDate={new Date()}
+                  />
+                </div>
+              )
+            }}
+          </form.Subscribe>
+        )}
 
         <div className="flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onCancel}>
@@ -223,7 +245,9 @@ export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCa
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? t("registering") : t("registerCharge")}
+                {isSubmitting
+                  ? (isEdit ? t("saving") : t("registering"))
+                  : (isEdit ? t("saveChanges") : t("registerCharge"))}
               </Button>
             )}
           </form.Subscribe>
