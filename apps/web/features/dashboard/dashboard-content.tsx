@@ -234,7 +234,7 @@ export function DashboardContent({
               <tbody>
                 {recentTransactions.map((t) => {
                   const category = t.category_id ? categoryMap[t.category_id] : null
-                  const account = accountMap[t.account_id]
+                  const account = t.account_id ? accountMap[t.account_id] : undefined
                   const isExpense = t.type === "expense"
                   return (
                     <tr key={t.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
@@ -596,6 +596,7 @@ function TypeBadge({ type }: { type: Transaction["type"] }) {
     expense: { labelKey: "typeExpense", className: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20" },
     transfer: { labelKey: "typeTransfer", className: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" },
     saving: { labelKey: "typeSaving", className: "bg-primary/10 text-primary border-primary/20" },
+    credit_card_charge: { labelKey: "typeCreditCardCharge", className: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20" },
   }
   const { labelKey, className } = map[type]
   return (

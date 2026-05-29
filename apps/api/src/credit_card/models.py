@@ -69,6 +69,12 @@ class CreditCardTransactionModel(TimestampMixin, Base):
     credit_card = relationship("CreditCardModel", back_populates="transactions")
     period = relationship("CreditCardPeriodModel", back_populates="transactions")
     category = relationship("CategoryModel", back_populates="credit_card_transactions")
+    transaction = relationship(
+        "TransactionModel",
+        back_populates="credit_card_transaction",
+        foreign_keys="[TransactionModel.credit_card_transaction_id]",
+        uselist=False,
+    )
 
 
 class CreditCardPaymentModel(TimestampMixin, Base):

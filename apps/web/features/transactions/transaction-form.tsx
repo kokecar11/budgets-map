@@ -70,7 +70,7 @@ export function TransactionForm({
   const form = useForm({
     defaultValues: isEditing
       ? {
-          account_id: initialValues.account_id,
+          account_id: initialValues.account_id ?? "",
           type: initialValues.type,
           amount: String(initialValues.amount),
           date: initialValues.date.split("T")[0],

@@ -41,13 +41,15 @@ export function CreditCardChargeForm({ creditCardId, categories, onSuccess, onCa
     onSubmit: async ({ value }) => {
       try {
         const token = session?.accessToken ?? ""
+        const amount = Number(value.amount)
+        const isoDate = new Date(value.date + "T00:00:00").toISOString()
         const charge = await creditCardTransactionApi.create(
           creditCardId,
           {
             credit_card_id: creditCardId,
             description: value.description,
-            amount: Number(value.amount),
-            date: new Date(value.date + "T00:00:00").toISOString(),
+            amount,
+            date: isoDate,
             category_id: value.category_id,
             installments: Number(value.installments) || 1,
             installment_number: 1,

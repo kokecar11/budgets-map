@@ -10,6 +10,7 @@ from src.credit_card.services import (
     CreditCardService, CreditCardPeriodService,
     CreditCardTransactionService, CreditCardPaymentService,
 )
+from src.transaction.repository import TransactionRepository
 
 
 def get_credit_card_service(db: Annotated[AsyncSession, Depends(get_db)]) -> CreditCardService:
@@ -21,7 +22,7 @@ def get_credit_card_period_service(db: Annotated[AsyncSession, Depends(get_db)])
 
 
 def get_credit_card_transaction_service(db: Annotated[AsyncSession, Depends(get_db)]) -> CreditCardTransactionService:
-    return CreditCardTransactionService(CreditCardTransactionRepository(db))
+    return CreditCardTransactionService(CreditCardTransactionRepository(db), TransactionRepository(db))
 
 
 def get_credit_card_payment_service(db: Annotated[AsyncSession, Depends(get_db)]) -> CreditCardPaymentService:

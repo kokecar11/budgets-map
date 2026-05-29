@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react"
 import {
   Plus, Pencil, Trash2,
-  ArrowUpCircle, ArrowDownCircle, ArrowRightLeft, PiggyBank, ReceiptText,
+  ArrowUpCircle, ArrowDownCircle, ArrowRightLeft, PiggyBank, ReceiptText, CreditCard,
   Filter, X, Download, Loader2, ChevronLeft, ChevronRight, RefreshCw,
 } from "lucide-react"
 import { useLocale, useTranslations } from "next-intl"
@@ -41,6 +41,7 @@ const TYPE_ICONS = {
   expense: ArrowDownCircle,
   transfer: ArrowRightLeft,
   saving: PiggyBank,
+  credit_card_charge: CreditCard,
 }
 
 const TYPE_ICON_BG = {
@@ -48,6 +49,7 @@ const TYPE_ICON_BG = {
   expense: "bg-red-500/10",
   transfer: "bg-blue-500/10",
   saving: "bg-purple-500/10",
+  credit_card_charge: "bg-orange-500/10",
 }
 
 const TYPE_COLORS = {
@@ -55,6 +57,7 @@ const TYPE_COLORS = {
   expense: "text-red-500",
   transfer: "text-blue-500",
   saving: "text-purple-500",
+  credit_card_charge: "text-orange-500",
 }
 
 const TYPE_AMOUNT_COLORS = {
@@ -62,6 +65,7 @@ const TYPE_AMOUNT_COLORS = {
   expense: "text-red-500",
   transfer: "text-blue-500",
   saving: "text-purple-500",
+  credit_card_charge: "text-orange-500",
 }
 
 // TYPE_LABELS are handled via useTranslations in the component
@@ -88,6 +92,7 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
     expense: t("typeExpense"),
     transfer: t("typeTransfer"),
     saving: t("typeSaving"),
+    credit_card_charge: t("typeCreditCardCharge"),
   }
   const [pageSize, setPageSize] = useState(20)
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions)
@@ -250,6 +255,7 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
                       typeExpense: tExport("typeExpense"),
                       typeTransfer: tExport("typeTransfer"),
                       typeSaving: tExport("typeSaving"),
+                      typeCreditCardCharge: tExport("typeCreditCardCharge"),
                     }
                     exportTransactionsCSV(filteredSorted, accounts, categories, locale, csvLabels)
                   }}
@@ -272,6 +278,7 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
                       typeExpense: tExport("typeExpense"),
                       typeTransfer: tExport("typeTransfer"),
                       typeSaving: tExport("typeSaving"),
+                      typeCreditCardCharge: tExport("typeCreditCardCharge"),
                       reportTitle: tExport("reportTitle"),
                       generatedOn: tExport("generatedOn"),
                       numTransactions: tExport("numTransactions", { count: filteredSorted.length }),
@@ -443,7 +450,7 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
                             </p>
                             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                               <span className="text-xs text-muted-foreground">
-                                {accountMap[tx.account_id] ?? tx.account_id}
+                                {tx.account_id ? (accountMap[tx.account_id] ?? tx.account_id) : t("typeCreditCardCharge")}
                               </span>
                               {tx.category_id && (
                                 <>
@@ -470,7 +477,7 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
                           </div>
 
                           <p className={`text-base font-bold shrink-0 ${amountColor}`}>
-                            {isExpense ? "-" : "+"}$ {fmt(tx.amount)}
+                            {(isExpense || tx.type === "credit_card_charge") ? "-" : "+"}$ {fmt(tx.amount)}
                           </p>
 
                           <Button
