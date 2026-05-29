@@ -1,0 +1,6 @@
+#include "Shared.xcconfig"
+
+// Release — production URL (replace PLACEHOLDER before any prod build)
+// "/$()/" emits a literal "//" without xcconfig treating it as a comment.
+API_BASE_URL = https:/$()/api.budgetsmap.com
+ALLOW_LOCAL_NETWORKING = NO

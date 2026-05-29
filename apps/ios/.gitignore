@@ -1,0 +1,25 @@
+# Generated Xcode project — regenerate with `xcodegen generate`
+*.xcodeproj/
+
+# Xcode build artifacts
+DerivedData/
+build/
+*.xcarchive
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Swift Package Manager (not used in this project, but common)
+.build/
+.swiftpm/
+
+# Xcode user settings
+xcuserdata/
+*.xcuserdatad/
+
+# Fastlane (if added later)
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
