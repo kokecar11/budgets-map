@@ -4,6 +4,7 @@ import { z } from "zod";
 export const env = createEnv({
   server: {
     BETTER_AUTH_SECRET: z.string(),
+    AUTH_URL:z.string(),
     LEMONSQUEEZY_CHECKOUT_URL: z.string().url().optional(),
   },
   client: {
@@ -11,6 +12,7 @@ export const env = createEnv({
   },
   runtimeEnv: {
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
+    AUTH_URL:process.env.AUTH_URL,
     LEMONSQUEEZY_CHECKOUT_URL: process.env.LEMONSQUEEZY_CHECKOUT_URL,
     NEXT_PUBLIC_LEMONSQUEEZY_STORE_ID: process.env.NEXT_PUBLIC_LEMONSQUEEZY_STORE_ID,
   },

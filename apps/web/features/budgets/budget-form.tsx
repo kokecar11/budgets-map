@@ -20,7 +20,7 @@ import {
 } from "@workspace/ui/components/select"
 import { useTranslations } from "next-intl"
 import { budgetApi } from "./api"
-import type { Budget, BudgetCreate } from "./types"
+import type { Budget, BudgetCreate, BudgetUpdate } from "./types"
 
 const currentYear = new Date().getFullYear()
 const YEARS = [currentYear - 1, currentYear, currentYear + 1]
@@ -28,12 +28,14 @@ const YEARS = [currentYear - 1, currentYear, currentYear + 1]
 interface BudgetFormProps {
   onSuccess: (budget: Budget) => void
   onCancel: () => void
+  initialValues?: Budget
 }
 
-export function BudgetForm({ onSuccess, onCancel }: BudgetFormProps) {
+export function BudgetForm({ onSuccess, onCancel, initialValues }: BudgetFormProps) {
   const { data: session } = useSession()
   const t = useTranslations("budgets")
   const tCommon = useTranslations("common")
+  const isEdit = Boolean(initialValues)
 
   const MONTHS = Array.from({ length: 12 }, (_, i) => ({
     value: String(i + 1),
@@ -42,24 +44,37 @@ export function BudgetForm({ onSuccess, onCancel }: BudgetFormProps) {
 
   const form = useForm({
     defaultValues: {
-      name: "",
-      month: String(new Date().getMonth() + 1),
-      year: String(currentYear),
-      description: "",
+      name: initialValues?.name ?? "",
+      month: String(initialValues?.month ?? new Date().getMonth() + 1),
+      year: String(initialValues?.year ?? currentYear),
+      description: initialValues?.description ?? "",
     },
     onSubmit: async ({ value }) => {
       try {
-        const payload: BudgetCreate = {
-          name: value.name,
-          month: Number(value.month),
-          year: Number(value.year),
-          description: value.description || undefined,
+        const token = session?.accessToken ?? ""
+        if (isEdit && initialValues) {
+          const payload: BudgetUpdate = {
+            name: value.name,
+            month: Number(value.month),
+            year: Number(value.year),
+            description: value.description || undefined,
+          }
+          const budget = await budgetApi.update(initialValues.id, payload, token)
+          toast.success(t("budgetUpdated"))
+          onSuccess(budget)
+        } else {
+          const payload: BudgetCreate = {
+            name: value.name,
+            month: Number(value.month),
+            year: Number(value.year),
+            description: value.description || undefined,
+          }
+          const budget = await budgetApi.create(payload, token)
+          toast.success(t("budgetCreated"))
+          onSuccess(budget)
         }
-        const budget = await budgetApi.create(payload, session?.accessToken ?? "")
-        toast.success(t("budgetCreated"))
-        onSuccess(budget)
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : t("errorCreating"))
+        toast.error(err instanceof Error ? err.message : isEdit ? t("errorSaving") : t("errorCreating"))
       }
     },
   })
@@ -177,7 +192,9 @@ export function BudgetForm({ onSuccess, onCancel }: BudgetFormProps) {
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? t("creating") : t("createBudget")}
+                {isSubmitting
+                  ? (isEdit ? t("saving") : t("creating"))
+                  : (isEdit ? t("saveChanges") : t("createBudget"))}
               </Button>
             )}
           </form.Subscribe>

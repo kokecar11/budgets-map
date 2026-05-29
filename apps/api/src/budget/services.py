@@ -107,8 +107,21 @@ class BudgetItemService:
         tx.budget_item_id = item_id
         item.is_paid = True
         await self.repository.db.flush()
-        updated = await self.repository.get_by_id(item_id)
-        return _to_with_actual(updated)
+        await self.repository.db.refresh(item, attribute_names=["transactions"])
+        return _to_with_actual(item)
+
+    async def bulk_link_transactions(self, item_id: str, tx_ids: list[str], user_id: str, tx_repo: TransactionRepository) -> BudgetItemWithActual:
+        item = await self.get_or_404(item_id)
+        for tx_id in tx_ids:
+            tx = await tx_repo.get_by_id(tx_id)
+            if tx is None or str(tx.user_id) != str(user_id):
+                raise HTTPException(status_code=403, detail="Transaction does not belong to this user")
+            tx.budget_item_id = item_id
+        if tx_ids:
+            item.is_paid = True
+        await self.repository.db.flush()
+        await self.repository.db.refresh(item, attribute_names=["transactions"])
+        return _to_with_actual(item)
 
     async def unlink_transaction(self, item_id: str, tx_id: str, tx_repo: TransactionRepository) -> BudgetItemWithActual:
         tx = await tx_repo.get_by_id(tx_id)
