@@ -8,6 +8,7 @@ from src.credit_card.schemas import (
     CreditCardPeriodCreate, CreditCardPeriodUpdate, CreditCardPeriodResponse,
     CreditCardTransactionCreate, CreditCardTransactionUpdate, CreditCardTransactionResponse,
     CreditCardPaymentCreate, CreditCardPaymentUpdate, CreditCardPaymentResponse,
+    MigrateTransactionsResponse,
 )
 from src.credit_card.services import (
     CreditCardService, CreditCardPeriodService,
@@ -132,6 +133,16 @@ async def create_cc_transaction(
 ):
     data.credit_card_id = credit_card_id
     return await service.create(data, current_user.id)
+
+
+@router.post("/{credit_card_id}/transactions/migrate", response_model=MigrateTransactionsResponse)
+async def migrate_cc_transactions(
+    credit_card_id: str,
+    current_user: CurrentUser,
+    service: CreditCardTransactionService = Depends(get_credit_card_transaction_service),
+):
+    count = await service.migrate_transactions(credit_card_id, current_user.id)
+    return MigrateTransactionsResponse(count=count)
 
 
 @router.patch("/transactions/{id}", response_model=CreditCardTransactionResponse)
