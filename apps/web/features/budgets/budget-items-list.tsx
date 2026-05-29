@@ -101,11 +101,12 @@ export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, cate
     setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
   }
 
-  async function handleAddLink(item: BudgetItem, transactionId: string) {
+  async function handleAddMany(item: BudgetItem, transactionIds: string[]) {
     try {
-      const updated = await budgetItemApi.linkTransaction(item.id, transactionId, session?.accessToken ?? "")
+      const updated = await budgetItemApi.bulkLinkTransactions(item.id, transactionIds, session?.accessToken ?? "")
       setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
-      toast.success(t("transactionAdded"))
+      setLinkTarget(updated)
+      toast.success(t("transactionsAdded", { count: transactionIds.length }))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("errorLinking"))
       throw err
@@ -263,7 +264,7 @@ export function BudgetItemsList({ budgetId, initialItems, previousBudgetId, cate
           budget={budget}
           accounts={accounts}
           categories={categories}
-          onAdd={handleAddLink}
+          onAddMany={handleAddMany}
         />
       )}
     </div>

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { CheckIcon, ArrowDownCircle, ArrowUpCircle, CreditCard, SearchIcon } from "lucide-react"
+import { useState, useMemo, useEffect } from "react"
+import { ArrowDownCircle, ArrowUpCircle, CreditCard, SearchIcon, CheckSquare, Square } from "lucide-react"
 import { useTranslations } from "next-intl"
 
 import { Button } from "@workspace/ui/components/button"
@@ -54,7 +54,7 @@ interface LinkTransactionDialogProps {
   budget: Budget
   accounts: Account[]
   categories: Category[]
-  onAdd: (item: BudgetItem, transactionId: string) => Promise<void>
+  onAddMany: (item: BudgetItem, transactionIds: string[]) => Promise<void>
 }
 
 export function LinkTransactionDialog({
@@ -65,16 +65,21 @@ export function LinkTransactionDialog({
   budget,
   accounts,
   categories,
-  onAdd,
+  onAddMany,
 }: LinkTransactionDialogProps) {
   const t = useTranslations("budgets")
   const tCommon = useTranslations("common")
-  const [selectedId, setSelectedId] = useState<string>("")
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState("")
   const [filterType, setFilterType] = useState<"all" | LinkableType>("all")
   const [filterCategoryId, setFilterCategoryId] = useState("all")
   const [filterAccountId, setFilterAccountId] = useState("all")
+
+  // Reset selection whenever the dialog opens
+  useEffect(() => {
+    if (open) setSelectedIds(new Set())
+  }, [open])
 
   const accountMap = Object.fromEntries(accounts.map((a) => [a.id, a.name]))
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]))
@@ -102,12 +107,35 @@ export function LinkTransactionDialog({
     return result
   }, [eligible, filterType, filterAccountId, filterCategoryId, search])
 
+  function toggle(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every((tx) => selectedIds.has(tx.id))
+
+  function toggleSelectAll() {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (allFilteredSelected) {
+        filtered.forEach((tx) => next.delete(tx.id))
+      } else {
+        filtered.forEach((tx) => next.add(tx.id))
+      }
+      return next
+    })
+  }
+
   async function handleAdd() {
-    if (!selectedId) return
+    if (selectedIds.size === 0) return
     setLoading(true)
     try {
-      await onAdd(item, selectedId)
-      onOpenChange(false)
+      await onAddMany(item, [...selectedIds])
+      setSelectedIds(new Set())
     } finally {
       setLoading(false)
     }
@@ -184,6 +212,23 @@ export function LinkTransactionDialog({
             </Select>
           </div>
 
+          {/* Select all bar */}
+          {filtered.length > 0 && (
+            <div className="flex items-center justify-between px-1">
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {allFilteredSelected ? <CheckSquare className="size-3.5" /> : <Square className="size-3.5" />}
+                {allFilteredSelected ? t("deselectAll") : t("selectAll")}
+              </button>
+              {selectedIds.size > 0 && (
+                <span className="text-xs text-muted-foreground">{t("selectedCount", { count: selectedIds.size })}</span>
+              )}
+            </div>
+          )}
+
           {/* Transaction list */}
           <div className="max-h-60 overflow-y-auto flex flex-col gap-1 pr-0.5">
             {filtered.length === 0 ? (
@@ -196,15 +241,18 @@ export function LinkTransactionDialog({
                 const color = TYPE_COLORS[txType]
                 const accountName = tx.account_id ? (accountMap[tx.account_id] ?? "") : t("creditCardSource")
                 const catName = tx.category_id ? categoryMap[tx.category_id] : null
-                const isSelected = selectedId === tx.id
+                const isSelected = selectedIds.has(tx.id)
 
                 return (
                   <button
                     key={tx.id}
                     type="button"
-                    onClick={() => setSelectedId(tx.id)}
+                    onClick={() => toggle(tx.id)}
                     className={`flex items-center gap-3 rounded-md border px-3 py-2 text-left transition-colors hover:bg-accent ${isSelected ? "border-primary bg-accent/50" : ""}`}
                   >
+                    {isSelected
+                      ? <CheckSquare className="size-4 text-primary shrink-0" />
+                      : <Square className="size-4 text-muted-foreground shrink-0" />}
                     <div className={`flex size-7 shrink-0 items-center justify-center rounded-full ${bg}`}>
                       <Icon className={`size-3.5 ${color}`} />
                     </div>
@@ -220,7 +268,6 @@ export function LinkTransactionDialog({
                     <span className={`text-sm font-semibold shrink-0 ${color}`}>
                       {tx.amount.toLocaleString()}
                     </span>
-                    {isSelected && <CheckIcon className="size-4 text-primary shrink-0" />}
                   </button>
                 )
               })
@@ -235,14 +282,18 @@ export function LinkTransactionDialog({
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
-              {tCommon("cancel")}
+              {tCommon("close")}
             </Button>
             <Button
               type="button"
               onClick={handleAdd}
-              disabled={!selectedId || loading}
+              disabled={selectedIds.size === 0 || loading}
             >
-              {loading ? t("addingTransaction") : t("addTransaction")}
+              {loading
+                ? t("addingTransaction")
+                : selectedIds.size > 0
+                  ? `${t("addTransaction")} (${selectedIds.size})`
+                  : t("addTransaction")}
             </Button>
           </div>
         </div>

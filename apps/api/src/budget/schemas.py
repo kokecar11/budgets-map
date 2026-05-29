@@ -62,6 +62,10 @@ class BudgetItemLinkRequest(BaseModel):
     transaction_id: str
 
 
+class BudgetItemBulkLinkRequest(BaseModel):
+    transaction_ids: List[str]
+
+
 class BudgetItemResponse(BudgetItemBase):
     id: str
     budget_id: str
