@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from enum import Enum
+from src.transaction.schemas import TransactionResponse
 
 
 # --- Budget ---
@@ -44,7 +45,6 @@ class BudgetItemBase(BaseModel):
     planned_amount: float
     is_paid: bool = False
     category_id: Optional[str] = None
-    transaction_id: Optional[str] = None
 
 
 class BudgetItemCreate(BudgetItemBase):
@@ -56,7 +56,10 @@ class BudgetItemUpdate(BaseModel):
     planned_amount: Optional[float] = None
     is_paid: Optional[bool] = None
     category_id: Optional[str] = None
-    transaction_id: Optional[str] = None
+
+
+class BudgetItemLinkRequest(BaseModel):
+    transaction_id: str
 
 
 class BudgetItemResponse(BudgetItemBase):
@@ -71,6 +74,7 @@ class BudgetItemResponse(BudgetItemBase):
 class BudgetItemWithActual(BudgetItemResponse):
     actual_amount: Optional[float] = None
     difference: Optional[float] = None
+    transactions: List[TransactionResponse] = []
 
 
 class AlertStatus(str, Enum):
