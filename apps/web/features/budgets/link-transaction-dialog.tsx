@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Unlink, CheckIcon, ArrowDownCircle, ArrowUpCircle, CreditCard, SearchIcon } from "lucide-react"
+import { CheckIcon, ArrowDownCircle, ArrowUpCircle, CreditCard, SearchIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 
 import { Button } from "@workspace/ui/components/button"
@@ -54,7 +54,7 @@ interface LinkTransactionDialogProps {
   budget: Budget
   accounts: Account[]
   categories: Category[]
-  onLink: (item: BudgetItem, transactionId: string | null) => Promise<void>
+  onAdd: (item: BudgetItem, transactionId: string) => Promise<void>
 }
 
 export function LinkTransactionDialog({
@@ -65,11 +65,11 @@ export function LinkTransactionDialog({
   budget,
   accounts,
   categories,
-  onLink,
+  onAdd,
 }: LinkTransactionDialogProps) {
   const t = useTranslations("budgets")
   const tCommon = useTranslations("common")
-  const [selectedId, setSelectedId] = useState<string>(item.transaction_id ?? "")
+  const [selectedId, setSelectedId] = useState<string>("")
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState("")
   const [filterType, setFilterType] = useState<"all" | LinkableType>("all")
@@ -79,16 +79,19 @@ export function LinkTransactionDialog({
   const accountMap = Object.fromEntries(accounts.map((a) => [a.id, a.name]))
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]))
 
+  const linkedIds = new Set((item.transactions ?? []).map((t) => t.id))
+
   const eligible = useMemo(() => {
     return transactions.filter((tx) => {
       const date = new Date(tx.date)
       return (
         (LINKABLE_TYPES as readonly string[]).includes(tx.type) &&
         date.getMonth() + 1 === budget.month &&
-        date.getFullYear() === budget.year
+        date.getFullYear() === budget.year &&
+        !linkedIds.has(tx.id)
       )
     })
-  }, [transactions, budget])
+  }, [transactions, budget, linkedIds])
 
   const filtered = useMemo(() => {
     let result = eligible
@@ -99,21 +102,11 @@ export function LinkTransactionDialog({
     return result
   }, [eligible, filterType, filterAccountId, filterCategoryId, search])
 
-  async function handleLink() {
+  async function handleAdd() {
     if (!selectedId) return
     setLoading(true)
     try {
-      await onLink(item, selectedId)
-      onOpenChange(false)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleUnlink() {
-    setLoading(true)
-    try {
-      await onLink(item, null)
+      await onAdd(item, selectedId)
       onOpenChange(false)
     } finally {
       setLoading(false)
@@ -131,7 +124,7 @@ export function LinkTransactionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t("linkTransaction")}</DialogTitle>
+          <DialogTitle>{t("addTransaction")}</DialogTitle>
           <DialogDescription>
             {t("linkDesc", { month: budget.month, year: budget.year, item: item.description })}
           </DialogDescription>
@@ -235,36 +228,22 @@ export function LinkTransactionDialog({
           </div>
 
           {/* Actions */}
-          <div className="flex justify-between gap-2 pt-1 border-t">
-            {item.transaction_id && (
-              <Button
-                type="button"
-                variant="outline"
-                className="text-destructive hover:text-destructive"
-                onClick={handleUnlink}
-                disabled={loading}
-              >
-                <Unlink className="size-4" />
-                {t("unlink")}
-              </Button>
-            )}
-            <div className="flex gap-2 ml-auto">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={loading}
-              >
-                {tCommon("cancel")}
-              </Button>
-              <Button
-                type="button"
-                onClick={handleLink}
-                disabled={!selectedId || loading}
-              >
-                {loading ? t("linking") : t("link")}
-              </Button>
-            </div>
+          <div className="flex justify-end gap-2 pt-1 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+            >
+              {tCommon("cancel")}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleAdd}
+              disabled={!selectedId || loading}
+            >
+              {loading ? t("addingTransaction") : t("addTransaction")}
+            </Button>
           </div>
         </div>
       </DialogContent>

@@ -6,7 +6,7 @@ from src.user.models import UserModel
 from src.budget.schemas import (
     BudgetCreate, BudgetUpdate, BudgetResponse,
     BudgetItemCreate, BudgetItemUpdate, BudgetItemResponse,
-    BudgetItemWithActual, BudgetSummaryResponse,
+    BudgetItemWithActual, BudgetSummaryResponse, BudgetItemLinkRequest,
 )
 from src.budget.services import BudgetService, BudgetItemService
 from src.budget.dependencies import get_budget_service, get_budget_item_service, get_transaction_repository
@@ -91,11 +91,32 @@ async def create_budget_item(
 async def update_budget_item(
     id: str,
     data: BudgetItemUpdate,
+    _: CurrentUser,
+    service: BudgetItemService = Depends(get_budget_item_service),
+):
+    return await service.update(id, data)
+
+
+@router.post("/items/{id}/transactions", response_model=BudgetItemWithActual)
+async def link_transaction_to_item(
+    id: str,
+    data: BudgetItemLinkRequest,
     current_user: CurrentUser,
     service: BudgetItemService = Depends(get_budget_item_service),
     transaction_repo: TransactionRepository = Depends(get_transaction_repository),
 ):
-    return await service.update(id, data, user_id=current_user.id, transaction_repo=transaction_repo)
+    return await service.link_transaction(id, data.transaction_id, current_user.id, transaction_repo)
+
+
+@router.delete("/items/{id}/transactions/{tx_id}", response_model=BudgetItemWithActual)
+async def unlink_transaction_from_item(
+    id: str,
+    tx_id: str,
+    _: CurrentUser,
+    service: BudgetItemService = Depends(get_budget_item_service),
+    transaction_repo: TransactionRepository = Depends(get_transaction_repository),
+):
+    return await service.unlink_transaction(id, tx_id, transaction_repo)
 
 
 @router.delete("/items/{id}", status_code=status.HTTP_204_NO_CONTENT)

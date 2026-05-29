@@ -45,10 +45,13 @@ class BudgetItemModel(TimestampMixin, Base):
     description = Column(String, nullable=False)
     planned_amount = Column(Float, nullable=False)
     is_paid = Column(Boolean, nullable=False, default=False)
-    transaction_id = Column(String, ForeignKey("transactions.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=True, server_default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=True)
 
     budget = relationship("BudgetModel", back_populates="items")
     category = relationship("CategoryModel", back_populates="budget_items")
-    transaction = relationship("TransactionModel", back_populates="budget_items")
+    transactions = relationship(
+        "TransactionModel",
+        back_populates="budget_item",
+        foreign_keys="[TransactionModel.budget_item_id]",
+    )
