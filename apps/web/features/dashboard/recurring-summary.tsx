@@ -40,6 +40,7 @@ export function RecurringSummary({
     expense: t("typeExpense"),
     transfer: t("typeTransfer"),
     saving: t("typeSaving"),
+    credit_card_charge: t("typeCreditCardCharge"),
   }
   const categoryMap = useMemo(
     () => Object.fromEntries(categories.map((c) => [c.id, c.name])),

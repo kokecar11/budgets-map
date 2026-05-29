@@ -13,6 +13,8 @@ from src.credit_card.models import (
     CreditCardModel, CreditCardPeriodModel,
     CreditCardTransactionModel, CreditCardPaymentModel,
 )
+from src.transaction.repository import TransactionRepository
+from src.transaction.schemas import TransactionCreate
 
 
 class CreditCardService:
@@ -72,8 +74,13 @@ class CreditCardPeriodService:
 
 class CreditCardTransactionService:
 
-    def __init__(self, repository: CreditCardTransactionRepository):
+    def __init__(
+        self,
+        repository: CreditCardTransactionRepository,
+        transaction_repository: TransactionRepository,
+    ):
         self.repository = repository
+        self.transaction_repository = transaction_repository
 
     async def get_by_credit_card(self, credit_card_id: str) -> list[CreditCardTransactionModel]:
         return await self.repository.get_by_credit_card(credit_card_id)
@@ -84,8 +91,19 @@ class CreditCardTransactionService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Credit card transaction not found")
         return obj
 
-    async def create(self, data: CreditCardTransactionCreate) -> CreditCardTransactionModel:
-        return await self.repository.create(data)
+    async def create(self, data: CreditCardTransactionCreate, user_id: str) -> CreditCardTransactionModel:
+        obj = await self.repository.create(data)
+        await self.transaction_repository.create(TransactionCreate(
+            user_id=user_id,
+            account_id=None,
+            type="credit_card_charge",
+            amount=data.amount,
+            date=data.date,
+            description=data.description,
+            category_id=data.category_id,
+            credit_card_transaction_id=obj.id,
+        ))
+        return obj
 
     async def update(self, id: str, data: CreditCardTransactionUpdate) -> CreditCardTransactionModel:
         obj = await self.get_or_404(id)

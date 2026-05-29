@@ -28,6 +28,7 @@ export interface ExportPdfLabels {
   typeExpense: string
   typeTransfer: string
   typeSaving: string
+  typeCreditCardCharge: string
   // PDF-specific
   reportTitle: string
   generatedOn: string
@@ -73,6 +74,7 @@ export function exportTransactionsPDF(
     expense: labels.typeExpense,
     transfer: labels.typeTransfer,
     saving: labels.typeSaving,
+    credit_card_charge: labels.typeCreditCardCharge,
   }
 
   const accountMap  = Object.fromEntries(accounts.map((a) => [a.id, a.name]))
@@ -204,7 +206,7 @@ export function exportTransactionsPDF(
       new Date(tx.date).toLocaleDateString(localeTag, { day: "2-digit", month: "2-digit", year: "2-digit" }),
       typeLabels[tx.type] ?? tx.type,
       tx.description ?? "—",
-      accountMap[tx.account_id] ?? "—",
+      tx.account_id ? (accountMap[tx.account_id] ?? "—") : labels.typeCreditCardCharge,
       tx.category_id ? (categoryMap[tx.category_id] ?? "—") : "—",
       (tx.type === "expense" ? "-" : "+") + fmt(tx.amount, localeTag),
     ])

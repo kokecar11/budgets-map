@@ -127,11 +127,11 @@ async def list_cc_transactions(
 async def create_cc_transaction(
     credit_card_id: str,
     data: CreditCardTransactionCreate,
-    _: CurrentUser,
+    current_user: CurrentUser,
     service: CreditCardTransactionService = Depends(get_credit_card_transaction_service),
 ):
     data.credit_card_id = credit_card_id
-    return await service.create(data)
+    return await service.create(data, current_user.id)
 
 
 @router.patch("/transactions/{id}", response_model=CreditCardTransactionResponse)
