@@ -6,11 +6,14 @@ import { auth } from "@/auth"
 import { signOutAction } from "@/lib/actions"
 import { budgetApi, budgetItemApi } from "@/features/budgets/api"
 import { computeBudgetAlerts } from "@/features/budgets/alerts"
+import { financialRulesApi } from "@/features/financial-rules/api"
+import type { FinancialRules } from "@/features/financial-rules/types"
 import { ProtectedSidebar } from "@/components/protected-sidebar"
 import { SidebarInset, SidebarProvider } from "@workspace/ui/components/sidebar"
 import { SiteHeader } from "@workspace/ui/components/site-header"
 import { SessionMonitor } from "@/components/session-monitor"
 import { CurrencyProvider } from "@/contexts/currency-context"
+import { FinancialRulesProvider } from "@/contexts/financial-rules-context"
 
 export default async function DashboardLayout({
   children,
@@ -29,10 +32,11 @@ export default async function DashboardLayout({
   }
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
 
+  const token = session.accessToken ?? ""
+
   // Compute current-month budget alert count for the user-menu badge
   let alertCount = 0
   try {
-    const token = session.accessToken ?? ""
     const now = new Date()
     const budgets = await budgetApi.list(token)
     const currentBudget = budgets.find(
@@ -50,6 +54,14 @@ export default async function DashboardLayout({
     alertCount = 0
   }
 
+  // Financial rules (expense model, etc.) — seed the client provider
+  let financialRules: FinancialRules
+  try {
+    financialRules = await financialRulesApi.get(token)
+  } catch {
+    financialRules = { id: "", user_id: session.user.id ?? "", expense_model: "accrual" }
+  }
+
   const navItemConfigs = [
     { key: "dashboard"    as const, title: tNav("dashboard"),    url: "/dashboard" },
     { key: "accounts"     as const, title: tNav("accounts"),     url: "/accounts" },
@@ -65,6 +77,7 @@ export default async function DashboardLayout({
 
   return (
     <CurrencyProvider initialCurrency={session.user.currency ?? "COP"}>
+    <FinancialRulesProvider initialRules={financialRules}>
     <SidebarProvider
       defaultOpen={defaultOpen}
       style={
@@ -96,6 +109,7 @@ export default async function DashboardLayout({
       </SidebarInset>
       <SessionMonitor />
     </SidebarProvider>
+    </FinancialRulesProvider>
     </CurrencyProvider>
   )
 }

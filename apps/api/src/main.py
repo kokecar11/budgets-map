@@ -12,6 +12,7 @@ from src.transaction.router import router as transaction_router
 from src.credit_card.router import router as credit_card_router
 from src.loan.router import router as loan_router
 from src.subscription.router import router as subscription_router
+from src.financial_rules.router import router as financial_rules_router
 
 settings = get_settings()
 
@@ -43,6 +44,7 @@ app.include_router(credit_card_router, prefix="/api/v1")
 app.include_router(loan_router, prefix="/api/v1")
 app.include_router(permission_router, prefix="/api/v1")
 app.include_router(subscription_router, prefix="/api/v1")
+app.include_router(financial_rules_router, prefix="/api/v1")
 
 
 @app.get("/health")

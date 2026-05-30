@@ -681,6 +681,17 @@
     "subtitle": "Alertas de tus presupuestos",
     "empty": "No tienes alertas por ahora. Todo bajo control."
   },
+  "financial": {
+    "title": "Reglas financieras",
+    "subtitle": "Define cómo se calculan tus gastos. Estas reglas se aplican en todo el dashboard.",
+    "expenseModel": "Modelo de gastos",
+    "modelAccrual": "Devengado (cuando compras)",
+    "modelAccrualDesc": "El cargo de tarjeta cuenta como gasto cuando lo haces. El pago de la tarjeta no se cuenta como gasto (es saldo de deuda).",
+    "modelCash": "Caja (cuando sale el dinero)",
+    "modelCashDesc": "El pago de la tarjeta cuenta como gasto cuando sale de tu cuenta. El cargo de tarjeta no se cuenta hasta que lo pagas.",
+    "modelSaved": "Modelo de gastos actualizado",
+    "errorSaving": "Error al guardar la regla"
+  },
   "settings": {
     "profile": "Perfil",
     "name": "Nombre",
@@ -700,6 +711,7 @@
     "profileUpdated": "Perfil actualizado",
     "errorSaving": "Error al guardar",
     "general": "General",
+    "financialRules": "Reglas financieras",
     "account": "Cuenta",
     "billing": "Facturación",
     "privacy": "Privacidad",

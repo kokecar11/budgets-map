@@ -8,3 +8,4 @@ def load_all_models():
     from src.loan import models  # noqa
     from src.saving import models  # noqa
     from src.permissions import models  # noqa
+    from src.financial_rules import models  # noqa
