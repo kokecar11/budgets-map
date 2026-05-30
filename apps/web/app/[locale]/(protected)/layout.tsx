@@ -4,6 +4,8 @@ import "@workspace/ui/globals.css"
 import { getTranslations } from "next-intl/server"
 import { auth } from "@/auth"
 import { signOutAction } from "@/lib/actions"
+import { budgetApi, budgetItemApi } from "@/features/budgets/api"
+import { computeBudgetAlerts } from "@/features/budgets/alerts"
 import { ProtectedSidebar } from "@/components/protected-sidebar"
 import { SidebarInset, SidebarProvider } from "@workspace/ui/components/sidebar"
 import { SiteHeader } from "@workspace/ui/components/site-header"
@@ -26,6 +28,27 @@ export default async function DashboardLayout({
     redirect("/login")
   }
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
+
+  // Compute current-month budget alert count for the user-menu badge
+  let alertCount = 0
+  try {
+    const token = session.accessToken ?? ""
+    const now = new Date()
+    const budgets = await budgetApi.list(token)
+    const currentBudget = budgets.find(
+      (b) => b.month === now.getMonth() + 1 && b.year === now.getFullYear()
+    )
+    if (currentBudget) {
+      const items = await budgetItemApi.list(currentBudget.id, token)
+      alertCount = computeBudgetAlerts(
+        items,
+        currentBudget.alert_warning_pct,
+        currentBudget.alert_danger_pct
+      ).length
+    }
+  } catch {
+    alertCount = 0
+  }
 
   const navItemConfigs = [
     { key: "dashboard"    as const, title: tNav("dashboard"),    url: "/dashboard" },
@@ -54,6 +77,7 @@ export default async function DashboardLayout({
         variant="inset"
         brand={{ name: tNav("brandName"), tagline: tNav("brandTagline") }}
         navItemConfigs={navItemConfigs}
+        alertCount={alertCount}
         user={{
           name: session?.user.name ?? "",
           email: session?.user.email ?? "",

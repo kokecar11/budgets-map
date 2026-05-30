@@ -12,13 +12,14 @@ import {
   CreditCard,
   BarChart3,
   TrendingUp,
+  Bell,
   Check,
   Sun,
   Moon,
   Monitor,
 } from "lucide-react"
 import { useLocale, useTranslations } from "next-intl"
-import { useRouter, usePathname } from "@/i18n/navigation"
+import { Link, useRouter, usePathname } from "@/i18n/navigation"
 import { useTheme } from "next-themes"
 import { AppSidebar } from "@workspace/ui/components/app-sidebar"
 import {
@@ -58,14 +59,16 @@ interface ProtectedSidebarProps extends ComponentProps<typeof Sidebar> {
   navItemConfigs: NavItemConfig[]
   user: { name: string; email: string; avatar?: string; plan?: string }
   navUserLabels: NavUserLabels
+  alertCount: number
 }
 
-function SidebarUserExtras() {
+function SidebarUserExtras({ alertCount }: { alertCount: number }) {
   const locale = useLocale() as Locale
   const router = useRouter()
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
   const t = useTranslations("settings")
+  const tNav = useTranslations("nav")
   const tLang = useTranslations("languageSwitcher")
 
   function handleLocale(next: string) {
@@ -76,6 +79,18 @@ function SidebarUserExtras() {
 
   return (
     <>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem asChild>
+        <Link href="/notifications">
+          <Bell className="size-4" />
+          {tNav("notifications")}
+          {alertCount > 0 && (
+            <span className="ml-auto inline-flex items-center justify-center rounded-full bg-red-500/15 text-red-600 dark:text-red-400 text-[10px] font-semibold px-1.5 min-w-5 h-5">
+              {alertCount}
+            </span>
+          )}
+        </Link>
+      </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
         <DropdownMenuLabel className="px-2 py-1 text-xs font-normal text-muted-foreground">
@@ -115,11 +130,11 @@ function SidebarUserExtras() {
   )
 }
 
-export function ProtectedSidebar({ navItemConfigs, ...props }: ProtectedSidebarProps) {
+export function ProtectedSidebar({ navItemConfigs, alertCount, ...props }: ProtectedSidebarProps) {
   const navItems = navItemConfigs.map(({ key, title, url }) => ({
     title,
     url,
     icon: NAV_ICONS[key],
   }))
-  return <AppSidebar {...props} navItems={navItems} navUserExtras={<SidebarUserExtras />} />
+  return <AppSidebar {...props} navItems={navItems} navUserExtras={<SidebarUserExtras alertCount={alertCount} />} />
 }
