@@ -77,7 +77,8 @@ export function TrendCharts({ transactions, categories }: TrendChartsProps) {
     const now = new Date()
     const map: Record<string, number> = {}
     for (const tx of transactions) {
-      if (tx.type !== "expense" || !tx.category_id) continue
+      if (!tx.category_id) continue
+      if (tx.type !== "expense" && tx.type !== "credit_card_charge") continue
       const d = new Date(tx.date)
       if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) continue
       map[tx.category_id] = (map[tx.category_id] ?? 0) + tx.amount

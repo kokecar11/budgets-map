@@ -12,6 +12,7 @@ import {
   Landmark,
   ChevronRight,
   Target,
+  AlertTriangle,
 } from "lucide-react"
 import { useLocale, useTranslations } from "next-intl"
 import type { Transaction } from "@/features/transactions/types"
@@ -24,7 +25,7 @@ import { parseDateParts, fmtDateLocal, LOCALE_TAG } from "@/lib/dates"
 import type { Locale } from "@/i18n/routing"
 import { useCurrency } from "@/hooks/use-currency"
 import { TrendCharts } from "./trend-charts"
-import { BudgetAlerts } from "./budget-alerts"
+import { computeBudgetAlerts } from "@/features/budgets/alerts"
 import { RecurringSummary } from "./recurring-summary"
 import { PremiumGate } from "@/components/premium-gate"
 
@@ -120,6 +121,15 @@ export function DashboardContent({
   }, [transactions])
 
 
+  const alertCount = useMemo(
+    () => computeBudgetAlerts(
+      budgetItems,
+      currentBudget?.alert_warning_pct ?? 80,
+      currentBudget?.alert_danger_pct ?? 100,
+    ).length,
+    [budgetItems, currentBudget]
+  )
+
   const totalPlanned = budgetItems.reduce((s, i) => s + i.planned_amount, 0)
   const totalSpentOnBudget = budgetItems.reduce((s, i) => {
     const spent = i.actual_amount ?? (i.is_paid ? i.planned_amount : 0)
@@ -181,14 +191,16 @@ export function DashboardContent({
         />
       </div>
 
-      {/* Budget Alerts — Pro only */}
-      {isPro && (
-        <BudgetAlerts
-          budgetItems={budgetItems}
-          categories={categories}
-          warningPct={currentBudget?.alert_warning_pct ?? 80}
-          dangerPct={currentBudget?.alert_danger_pct ?? 100}
-        />
+      {/* Budget Alerts — compact banner linking to /notifications (Pro only) */}
+      {isPro && alertCount > 0 && (
+        <Link
+          href="/notifications"
+          className="flex items-center gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/5 px-5 py-3 hover:bg-yellow-500/10 transition-colors"
+        >
+          <AlertTriangle className="size-4 text-yellow-500 shrink-0" />
+          <span className="text-sm font-medium flex-1">{t("alertsBannerText", { count: alertCount })}</span>
+          <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+        </Link>
       )}
 
       {/* Recurring this month */}
@@ -235,7 +247,7 @@ export function DashboardContent({
                 {recentTransactions.map((t) => {
                   const category = t.category_id ? categoryMap[t.category_id] : null
                   const account = t.account_id ? accountMap[t.account_id] : undefined
-                  const isExpense = t.type === "expense"
+                  const isNegative = t.type === "expense" || t.type === "credit_card_charge"
                   return (
                     <tr key={t.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="px-6 py-3 text-muted-foreground whitespace-nowrap text-xs">
@@ -253,8 +265,8 @@ export function DashboardContent({
                       <td className="px-6 py-3">
                         <TypeBadge type={t.type} />
                       </td>
-                      <td className={`px-6 py-3 text-right font-bold tabular-nums ${isExpense ? "text-red-500" : "text-green-500"}`}>
-                        {isExpense ? "−" : "+"}{fmt(t.amount)}
+                      <td className={`px-6 py-3 text-right font-bold tabular-nums ${isNegative ? "text-red-500" : "text-green-500"}`}>
+                        {isNegative ? "−" : "+"}{fmt(t.amount)}
                       </td>
                     </tr>
                   )

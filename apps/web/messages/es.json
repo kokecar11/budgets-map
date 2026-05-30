@@ -39,6 +39,7 @@
     "reports": "Reportes",
     "categories": "Categorías",
     "settings": "Configuración",
+    "notifications": "Notificaciones",
     "signOut": "Cerrar sesión",
     "brandName": "Budgets Map",
     "brandTagline": "Solución Financiera"
@@ -103,6 +104,7 @@
     "accountTypeDigitalWallet": "Billetera digital",
     "budgetAlerts": "Alertas de presupuesto",
     "alertCount": "{count, plural, one {# alerta} other {# alertas}}",
+    "alertsBannerText": "{count, plural, one {# alerta de presupuesto} other {# alertas de presupuesto}}",
     "budgetExceeded": "Presupuesto superado — gastaste {spent} de {planned}",
     "budgetWarning": "{pct}% usado — gastaste {spent} de {planned}",
     "dismissAlert": "Descartar alerta",
@@ -673,6 +675,11 @@
     "categoryUpdated": "Categoría actualizada",
     "errorSaving": "Error al guardar la categoría",
     "countCategories": "{count} categorías"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "subtitle": "Alertas de tus presupuestos",
+    "empty": "No tienes alertas por ahora. Todo bajo control."
   },
   "settings": {
     "profile": "Perfil",
