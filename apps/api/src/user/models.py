@@ -33,3 +33,4 @@ class UserModel(TimestampMixin, Base):
     loans = relationship("LoanModel", back_populates="user")
     saving_goals = relationship("SavingGoalModel", back_populates="user")
     permissions = relationship("PermissionModel", back_populates="user")
+    financial_rules = relationship("FinancialRulesModel", back_populates="user", uselist=False)

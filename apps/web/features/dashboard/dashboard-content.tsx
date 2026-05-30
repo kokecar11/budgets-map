@@ -26,6 +26,8 @@ import type { Locale } from "@/i18n/routing"
 import { useCurrency } from "@/hooks/use-currency"
 import { TrendCharts } from "./trend-charts"
 import { computeBudgetAlerts } from "@/features/budgets/alerts"
+import { isExpenseForModel } from "@/features/transactions/expense-model"
+import { useFinancialRules } from "@/contexts/financial-rules-context"
 import { RecurringSummary } from "./recurring-summary"
 import { PremiumGate } from "@/components/premium-gate"
 
@@ -53,6 +55,8 @@ export function DashboardContent({
   const locale = useLocale() as Locale
   const t = useTranslations("dashboard")
   const fmt = useCurrency()
+  const { rules } = useFinancialRules()
+  const expenseModel = rules.expense_model
   const now = new Date()
   const currentMonth = now.getMonth()
   const currentYear = now.getFullYear()
@@ -79,16 +83,17 @@ export function DashboardContent({
     let prevExpenses = 0
     for (const t of transactions) {
       const { month: m, year: y } = parseDateParts(t.date)
+      const isExpense = isExpenseForModel(t, expenseModel)
       if (m === currentMonth && y === currentYear) {
         if (t.type === "income") { monthlyIncome += t.amount; monthTxnIncome++ }
-        if (t.type === "expense") { monthlyExpenses += t.amount; monthTxnExpense++ }
+        if (isExpense) { monthlyExpenses += t.amount; monthTxnExpense++ }
       } else if (m === prevMonth && y === prevYear) {
         if (t.type === "income") prevIncome += t.amount
-        if (t.type === "expense") prevExpenses += t.amount
+        if (isExpense) prevExpenses += t.amount
       }
     }
     return { monthlyIncome, monthlyExpenses, monthTxnIncome, monthTxnExpense, prevIncome, prevExpenses }
-  }, [transactions, currentMonth, currentYear, prevMonth, prevYear])
+  }, [transactions, currentMonth, currentYear, prevMonth, prevYear, expenseModel])
 
   const totalBalance = useMemo(
     () => accounts.filter((a) => a.is_active).reduce((s, a) => s + a.balance, 0),

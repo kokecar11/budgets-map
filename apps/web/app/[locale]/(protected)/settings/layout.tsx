@@ -12,10 +12,11 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   const pathname = usePathname()
 
   const NAV_ITEMS = [
-    { label: t("general"),  href: "/settings" },
-    { label: t("account"),  href: "/settings/account" },
-    { label: t("billing"),  href: "/settings/billing" },
-    { label: t("privacy"),  href: "/settings/privacy" },
+    { label: t("general"),        href: "/settings" },
+    { label: t("financialRules"), href: "/settings/financial" },
+    { label: t("account"),        href: "/settings/account" },
+    { label: t("billing"),        href: "/settings/billing" },
+    { label: t("privacy"),        href: "/settings/privacy" },
   ]
 
   const activeLabel = NAV_ITEMS.find((item) => item.href === pathname)?.label ?? tNav("settings")

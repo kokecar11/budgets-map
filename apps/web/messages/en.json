@@ -681,6 +681,17 @@
     "subtitle": "Alerts from your budgets",
     "empty": "No alerts right now. Everything's under control."
   },
+  "financial": {
+    "title": "Financial rules",
+    "subtitle": "Define how your expenses are calculated. These rules apply across the dashboard.",
+    "expenseModel": "Expense model",
+    "modelAccrual": "Accrual (when you buy)",
+    "modelAccrualDesc": "A card charge counts as an expense when you make it. The card payment is not counted as an expense (it settles debt).",
+    "modelCash": "Cash (when money leaves)",
+    "modelCashDesc": "The card payment counts as an expense when it leaves your account. The card charge is not counted until you pay it.",
+    "modelSaved": "Expense model updated",
+    "errorSaving": "Error saving rule"
+  },
   "settings": {
     "profile": "Profile",
     "name": "Name",
@@ -700,6 +711,7 @@
     "profileUpdated": "Profile updated",
     "errorSaving": "Error saving",
     "general": "General",
+    "financialRules": "Financial rules",
     "account": "Account",
     "billing": "Billing",
     "privacy": "Privacy",

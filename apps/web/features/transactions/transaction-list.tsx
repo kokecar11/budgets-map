@@ -26,6 +26,8 @@ import {
 
 import { TransactionForm } from "./transaction-form"
 import { transactionApi } from "./api"
+import { isExpenseForModel } from "./expense-model"
+import { useFinancialRules } from "@/contexts/financial-rules-context"
 import { exportTransactionsCSV } from "./export-csv"
 import { exportTransactionsPDF } from "./export-pdf"
 import type { Transaction } from "./types"
@@ -164,12 +166,14 @@ export function TransactionList({ token, isPro, userName, userEmail, initialTran
 
   const fmt = useCurrency()
 
+  const { rules } = useFinancialRules()
+
   const totalIncome = transactions
     .filter((t) => t.type === "income")
     .reduce((sum, t) => sum + t.amount, 0)
 
   const totalExpense = transactions
-    .filter((t) => t.type === "expense")
+    .filter((t) => isExpenseForModel(t, rules.expense_model))
     .reduce((sum, t) => sum + t.amount, 0)
 
   const balance = totalIncome - totalExpense
