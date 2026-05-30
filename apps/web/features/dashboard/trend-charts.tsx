@@ -15,6 +15,8 @@ import { BarChart2, PieChart as PieIcon } from "lucide-react"
 import { useLocale, useTranslations } from "next-intl"
 import type { Transaction } from "@/features/transactions/types"
 import type { Category } from "@/features/categories/types"
+import { isExpenseForModel } from "@/features/transactions/expense-model"
+import { useFinancialRules } from "@/contexts/financial-rules-context"
 import { LOCALE_TAG } from "@/lib/dates"
 import type { Locale } from "@/i18n/routing"
 import { useCurrency } from "@/hooks/use-currency"
@@ -45,6 +47,8 @@ export function TrendCharts({ transactions, categories }: TrendChartsProps) {
   const locale = useLocale() as Locale
   const t = useTranslations("dashboard")
   const localeTag = LOCALE_TAG[locale]
+  const { rules } = useFinancialRules()
+  const expenseModel = rules.expense_model
 
   const categoryColorMap = Object.fromEntries(
     categories.map((c, i) => [c.id, c.color ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length]])
@@ -67,10 +71,10 @@ export function TrendCharts({ transactions, categories }: TrendChartsProps) {
       const bucket = months[idx]
       if (!bucket) continue
       if (tx.type === "income")  bucket.income  += tx.amount
-      if (tx.type === "expense") bucket.expense += tx.amount
+      if (isExpenseForModel(tx, expenseModel)) bucket.expense += tx.amount
     }
     return months
-  }, [transactions])
+  }, [transactions, expenseModel])
 
   // Top 6 spending categories this month — with color
   const categoryData = useMemo(() => {
@@ -78,7 +82,7 @@ export function TrendCharts({ transactions, categories }: TrendChartsProps) {
     const map: Record<string, number> = {}
     for (const tx of transactions) {
       if (!tx.category_id) continue
-      if (tx.type !== "expense" && tx.type !== "credit_card_charge") continue
+      if (!isExpenseForModel(tx, expenseModel)) continue
       const d = new Date(tx.date)
       if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) continue
       map[tx.category_id] = (map[tx.category_id] ?? 0) + tx.amount
@@ -91,7 +95,7 @@ export function TrendCharts({ transactions, categories }: TrendChartsProps) {
       }))
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 6)
-  }, [transactions, categoryNameMap, categoryColorMap])
+  }, [transactions, categoryNameMap, categoryColorMap, expenseModel])
 
   // Dynamic config for bar/pie so ChartTooltipContent gets labels
   const catConfig = useMemo(() => {
