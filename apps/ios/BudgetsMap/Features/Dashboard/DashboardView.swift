@@ -5,6 +5,7 @@ import SwiftUI
 struct DashboardView: View {
 
     @State private var vm: DashboardViewModel
+    @State private var showAddTransaction: Bool = false
     private let sessionStore: SessionStore
     private let session: Session
 
@@ -39,6 +40,30 @@ struct DashboardView: View {
                     }
                 }
             }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            // FAB is only meaningful once data (categories + accounts) is loaded.
+            if case .loaded = vm.state {
+                Button {
+                    showAddTransaction = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.title2.weight(.semibold))
+                        .frame(width: 56, height: 56)
+                }
+                .background(Color.accentColor, in: Circle())
+                .foregroundStyle(.white)
+                .shadow(radius: 6, y: 3)
+                .padding(20)
+                .accessibilityLabel("Add Transaction")
+            }
+        }
+        .sheet(isPresented: $showAddTransaction) {
+            AddTransactionView(
+                viewModel: vm.makeAddTransactionViewModel {
+                    Task { await vm.load() }
+                }
+            )
         }
         .task {
             await vm.load()

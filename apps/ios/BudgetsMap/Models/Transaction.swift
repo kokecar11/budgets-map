@@ -1,12 +1,23 @@
 import Foundation
 
 /// Transaction type enum — strict decoding for MVP (5 fixed cases).
-enum TransactionType: String, Codable, Sendable {
+enum TransactionType: String, Codable, Sendable, CaseIterable {
     case income
     case expense
     case transfer
     case saving
     case creditCardCharge = "credit_card_charge"
+
+    /// Human-readable label used in pickers and UI.
+    var displayName: String {
+        switch self {
+        case .income:           return "Income"
+        case .expense:          return "Expense"
+        case .transfer:         return "Transfer"
+        case .saving:           return "Saving"
+        case .creditCardCharge: return "Credit Card"
+        }
+    }
 }
 
 /// A single financial transaction.

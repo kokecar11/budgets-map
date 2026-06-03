@@ -82,4 +82,31 @@ extension Endpoint {
     static var categories: Endpoint {
         Endpoint(path: "/api/v1/categories", method: .get, requiresAuth: true)
     }
+
+    // MARK: Transactions (write)
+
+    static func createTransaction(_ body: TransactionCreateRequest) -> Endpoint {
+        Endpoint(
+            path: "/api/v1/transactions",
+            method: .post,
+            body: body,
+            requiresAuth: true
+        )
+    }
+
+    // MARK: Receipt scan (PRO)
+
+    /// POSTs OCR text lines to the LLM receipt-scan endpoint.
+    /// Requires a PRO user; the server gates on `plan == "pro"`.
+    static func scanReceiptText(lines: [String]) -> Endpoint {
+        struct Body: Encodable, Sendable {
+            let lines: [String]
+        }
+        return Endpoint(
+            path: "/api/v1/transactions/scan-receipt",
+            method: .post,
+            body: Body(lines: lines),
+            requiresAuth: true
+        )
+    }
 }

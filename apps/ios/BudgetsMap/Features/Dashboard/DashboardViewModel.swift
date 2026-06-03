@@ -148,6 +148,40 @@ final class DashboardViewModel {
         return fmt
     }
 
+    // MARK: - Add Transaction factory
+
+    /// Creates an `AddTransactionViewModel` pre-loaded with the currently fetched
+    /// accounts and categories. `apiClient` stays private to `DashboardViewModel`.
+    ///
+    /// Threads the current session's `plan` into the VM so it can gate LLM escalation
+    /// for PRO users without a direct SessionStore dependency.
+    ///
+    /// The returned VM is owned by the calling View via `@State`.
+    func makeAddTransactionViewModel(
+        onSaved: @escaping @MainActor () -> Void
+    ) -> AddTransactionViewModel {
+        let accounts: [Account]
+        let categories: [Category]
+
+        if case .loaded(let data) = state {
+            accounts = data.accounts
+            categories = data.categories
+        } else {
+            accounts = []
+            categories = []
+        }
+
+        let plan = sessionStore.currentSession?.plan ?? "free"
+
+        return AddTransactionViewModel(
+            apiClient: apiClient,
+            accounts: accounts,
+            categories: categories,
+            plan: plan,
+            onSaved: onSaved
+        )
+    }
+
     // MARK: - Private helpers
 
     /// Wraps a throwing `APIClient.request` call in a `Result` so one failure

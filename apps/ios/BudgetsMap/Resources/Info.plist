@@ -32,5 +32,7 @@
     </dict>
     <key>UILaunchScreen</key>
     <dict/>
+    <key>NSCameraUsageDescription</key>
+    <string>Usamos la cámara para escanear tus facturas y prellenar la transacción.</string>
 </dict>
 </plist>

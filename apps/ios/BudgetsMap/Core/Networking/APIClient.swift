@@ -42,6 +42,23 @@ final class APIClient: Sendable {
         _ = try await execute(endpoint, isRetry: false)
     }
 
+    /// POSTs a new transaction and returns the server-created `Transaction`.
+    /// Reuses the generic `request` path — Bearer injection + 401 retry included.
+    func createTransaction(_ body: TransactionCreateRequest) async throws -> Transaction {
+        try await request(Endpoint.createTransaction(body))
+    }
+
+    /// Sends OCR text lines to the LLM receipt-scan endpoint and returns a `ReceiptScanResult`.
+    ///
+    /// Throws `APIError.httpError(statusCode: 403)` when the user is not PRO,
+    /// `APIError.httpError(statusCode: 429)` when the monthly scan limit is reached,
+    /// and `APIError.httpError(statusCode: 502)` / `504` on OpenAI backend failure.
+    /// All other `APIError` cases propagate normally.
+    func scanReceiptText(lines: [String]) async throws -> ReceiptScanResult {
+        let dto: ReceiptScanResponseDTO = try await request(Endpoint.scanReceiptText(lines: lines))
+        return dto.toResult()
+    }
+
     // MARK: - Private execution
 
     private func execute(_ endpoint: Endpoint, isRetry: Bool) async throws -> Data {
