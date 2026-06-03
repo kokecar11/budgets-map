@@ -93,3 +93,27 @@ class CategoryStat(BaseModel):
 
 class CategoryStatsResponse(BaseModel):
     stats: List[CategoryStat]
+
+
+# --- Receipt Scan schemas ---
+
+class ReceiptScanRequest(BaseModel):
+    lines: Optional[List[str]] = None
+    text: Optional[str] = None
+
+    @model_validator(mode="after")
+    def require_one(self) -> "ReceiptScanRequest":
+        has_lines = bool(self.lines)
+        has_text = bool(self.text and self.text.strip())
+        if not has_lines and not has_text:
+            raise ValueError("At least one of 'lines' or 'text' must be provided and non-empty.")
+        return self
+
+
+class ReceiptScanResponse(BaseModel):
+    amount: Optional[float] = None
+    date: Optional[str] = None          # YYYY-MM-DD
+    merchant: Optional[str] = None
+    type: Literal["income", "expense"] = "expense"
+    category_id: Optional[str] = None   # guaranteed ∈ user's categories or null
+    currency: Optional[str] = None

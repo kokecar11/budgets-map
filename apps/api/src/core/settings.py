@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     LEMONSQUEEZY_STORE_ID: str = ""
     LEMONSQUEEZY_PRO_VARIANT_ID: str = ""
     LEMONSQUEEZY_WEBHOOK_SECRET: str = ""
+    # Receipt scan (LLM)
+    OPENAI_SCAN_TEXT_MODEL: str = "gpt-4.1-nano"
+    OPENAI_SCAN_VISION_MODEL: str = "gpt-4.1-mini"
+    RECEIPT_SCAN_MONTHLY_CAP: int = 100
+    OPENAI_SCAN_TIMEOUT: float = 20.0
     model_config = SettingsConfigDict(env_file="./.env")
 
 
