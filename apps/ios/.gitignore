@@ -14,6 +14,9 @@ build/
 .build/
 .swiftpm/
 
+# Per-developer local config overrides (e.g. LAN IP for physical-device testing)
+Config/Local.xcconfig
+
 # Xcode user settings
 xcuserdata/
 *.xcuserdatad/

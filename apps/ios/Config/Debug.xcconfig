@@ -5,3 +5,8 @@
 // MUST sit BETWEEN the two slashes (/$()/), so the raw text never contains "//".
 API_BASE_URL = http:/$()/localhost:8000
 ALLOW_LOCAL_NETWORKING = YES
+
+// Optional per-developer override (gitignored). For physical-device testing it sets
+// API_BASE_URL to this Mac's LAN IP. Included LAST so its value WINS over localhost.
+// Absent on machines that only use the Simulator → falls back to localhost above.
+#include? "Local.xcconfig"
